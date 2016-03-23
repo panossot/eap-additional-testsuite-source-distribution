@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>org.jboss.eap.additional.testsuite.source.distribution</groupId>
+    <artifactId>EapAdditionalTestsuiteSourceDistribution</artifactId>
+    <version>1.0.0.Final</version>
+    <packaging>jar</packaging>
+    
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <maven.compiler.source>1.7</maven.compiler.source>
+        <maven.compiler.target>1.7</maven.compiler.target>
+    </properties>
+    
+    <name>${project.groupId}:${project.artifactId}</name>
+    <description>The code to produce the jar to be used in order to distribute the test files to the equivalent servers. To be used along with the eap-additional-testsuite.</description>
+    <url>https://github.com/panossot/eap-additional-testsuite-source-distribution</url>
+
+    <licenses>
+        <license>
+            <name>GNU LESSER GENERAL PUBLIC LICENSE</name>
+            <url>http://www.gnu.org/licenses/lgpl-2.1-standalone.html</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <name>Panagiotis Sotiropoulos</name>
+            <email>psotirop@redhat.com</email>
+            <organization>Red Hat</organization>
+            <organizationUrl>http://www.redhat.com</organizationUrl>
+        </developer>
+    </developers>
+
+    <scm>
+        <connection>scm:git:git@github.com:panossot/eap-additional-testsuite-source-distribution.git</connection>
+        <developerConnection>scm:git:git@github.com:panossot/eap-additional-testsuite-source-distribution.git</developerConnection>
+        <url>https://github.com/panossot/eap-additional-testsuite-source-distribution</url>
+    </scm>
+
+    <distributionManagement>
+        <snapshotRepository>
+            <id>ossrh</id>
+            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+        </snapshotRepository>
+    </distributionManagement>
+    
+    <build>
+        <plugins>
+            <plugin>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>2.3.2</version>
+                <configuration>
+                    <source>1.7</source>
+                    <target>1.7</target>
+                </configuration>
+            </plugin>
+
+            <!--plugin>  
+	        <groupId>org.codehaus.mojo</groupId>  
+	        <artifactId>exec-maven-plugin</artifactId>  
+	        <version>1.1.1</version>  
+	        <executions>  
+	            <execution>  
+	                <phase>test</phase>  
+	                <goals>  
+		            <goal>java</goal>  
+	                </goals>  
+	                <configuration>  
+		            <mainClass>org.jboss.eap.additional.testsuite.source.distribution.AdditionalTestsuiteDistributeSources</mainClass>  
+		            <arguments>  
+		                <argument>/home/panos/JBOSS_ADDITIONAL_TESTS/eap-additional-testsuite-NEW</argument>  
+		                <argument>/home/panos/JBOSS_ADDITIONAL_TESTS/eap-additional-testsuite-NEW/modules/src/main/java</argument>  
+		            </arguments>  
+	                </configuration>  
+	            </execution>  
+	       </executions>  
+	    </plugin-->
+       </plugins>
+   </build>
+</project>
