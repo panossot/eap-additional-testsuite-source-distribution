@@ -12,5 +12,12 @@ Purpose :
 ---------
 The code searches the specified source directory for java files with the class annotation @EapAdditionalTestsuite and distributes the java files to the equivalent server directories (which are specified as an attribute of @EapAdditionalTestsuite), in order to be processed as eap-additional-testsuite Server TestCases.
 
+
+@EapAdditionalTestsuite
+-----------------------
+Class level annotation used for distribution of the sources to the equivalent Server directory of eap-additional-testsuite.
+Its attribute is an array of Strings that specifies the destination directories of the sources.
+
+
 #License 
 * [GNU Lesser General Public License Version 2.1](http://www.gnu.org/licenses/lgpl-2.1-standalone.html)
