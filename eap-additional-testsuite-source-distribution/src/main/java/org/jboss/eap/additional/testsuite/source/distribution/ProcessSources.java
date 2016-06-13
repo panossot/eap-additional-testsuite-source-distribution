@@ -40,7 +40,7 @@ import java.util.ArrayList;
  */
 public class ProcessSources {
 
-    public static void AdditionalTestSuiteAnnotationProcessing(String basedir, String sourcePath) {
+    public static void AdditionalTestSuiteAnnotationProcessing(String basedir, String sourcePath, String server) {
         File folder = new File(sourcePath);
         File[] listOfFiles = folder.listFiles();
 
@@ -51,9 +51,9 @@ public class ProcessSources {
         try {
             for (File file : listOfFiles) {
                 if (file.isDirectory()) {
-                    AdditionalTestSuiteAnnotationProcessing(basedir, file.getAbsolutePath());
+                    AdditionalTestSuiteAnnotationProcessing(basedir, file.getAbsolutePath(), server);
                 } else {
-                    ArrayList<FileData> output = checkFileForAnnotation(file.getAbsolutePath(), "@EapAdditionalTestsuite");
+                    ArrayList<FileData> output = checkFileForAnnotation(file.getAbsolutePath(), "@EapAdditionalTestsuite",server);
                     for (FileData dest : output) {
                         System.out.println(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName);
                         copyWithStreams(file, new File(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName),false);
@@ -65,7 +65,7 @@ public class ProcessSources {
         }
     }
 
-    public static ArrayList<FileData> checkFileForAnnotation(String file, String annotationName) throws ClassNotFoundException {
+    public static ArrayList<FileData> checkFileForAnnotation(String file, String annotationName,String server) throws ClassNotFoundException {
         String[] destinations = null;
         String annotationLine = null;
         ArrayList<FileData> result = new ArrayList<FileData>();
@@ -84,12 +84,10 @@ public class ProcessSources {
                     annotationLine = line;
                     destinations = annotationLine.split("\"");
                     for (String path : destinations) {
-                        if (!path.contains(",")) {
+                        if (!path.contains(",") && path.contains("/" + server + "/")) {
                             result.add(new FileData(f.getName(),packageName.replaceAll("\\.", "/"),path));
                         }
                     }
-                    result.remove(0);
-                    result.remove(result.size() - 1);
                     break;
                 }
             }

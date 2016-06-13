@@ -31,9 +31,10 @@ public class AdditionalTestsuiteDistributeSources {
      * @param args the command line arguments
      * args[0] : the ${basedir} of eap-additional-testsuite
      * args[1] : the source directory of eap-additional-testsuite : ${basedir}/modules/src/main/java
+     * args[2] : the server to distribute the sources to
      */
     public static void main(String[] args) {
-        ProcessSources.AdditionalTestSuiteAnnotationProcessing(args[0],args[1]);
+        ProcessSources.AdditionalTestSuiteAnnotationProcessing(args[0],args[1],args[2]);
     }
     
 }
