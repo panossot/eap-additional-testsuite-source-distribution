@@ -34,7 +34,7 @@ public class AdditionalTestsuiteDistributeSources {
      * args[2] : the server to distribute the sources to
      */
     public static void main(String[] args) {
-        ProcessSources.AdditionalTestSuiteAnnotationProcessing(args[0],args[1],args[2]);
+        ProcessSources.AdditionalTestSuiteAnnotationProcessing(args[0],args[1],args[2],args[3],args[4]);
     }
     
 }
