@@ -69,20 +69,20 @@ public class ProcessSources {
                             if (verPart.length > 2) {
                                 verRelease2 = Integer.parseInt(verPart[0] + verPart[1] + verPart[2]);
                             }
+                           
                             if (subVersions.length > 1 && verRelease1==verRelease2) {
                                 File versionFolder = new File(basedir + "/" + versionOrderDir + "/" + server + "/" + subVersions[0]);
                                 if (versionFolder.exists()) {
                                     String versionsString = readFile(basedir + "/" + versionOrderDir + "/" + server + "/" + subVersions[0]);
                                     if (versionsString!=null && versionsString.contains(subVersions[1])) {
-                                        String[] versions = versionsString.substring(versionsString.indexOf(subVersions[1])-1).split(",");
-                                        
+                                        String[] versions = versionsString.substring(versionsString.indexOf(subVersions[1])).split(",");
                                         for (String versionPart : versionRelease) {
                                             if (versionPart.contains(".")) {
                                                 String[] versionNums = versionPart.split("\\.");
                                                 String lastPart = versionNums[versionNums.length-1];
                                                 if (!lastPart.matches("[0-9]+")) {
                                                     for (String ver : versions) {
-                                                        if (lastPart.contains(ver)) {
+                                                        if (lastPart.contains(ver) || lastPart.compareTo(ver)==0) {
                                                             System.out.println(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName);
                                                             copyWithStreams(file, new File(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName),false);
                                                         }
@@ -92,7 +92,7 @@ public class ProcessSources {
                                         }
                                     }
                                 }
-                            } else if (verRelease1>verRelease2) {
+                            } else if (verRelease1>=verRelease2) {
                                 System.out.println(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName);
                                 copyWithStreams(file, new File(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName),false);
                             }
