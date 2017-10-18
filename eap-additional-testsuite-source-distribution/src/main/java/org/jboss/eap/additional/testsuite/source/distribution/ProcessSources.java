@@ -69,6 +69,17 @@ public class ProcessSources {
                             if (verPart.length > 2) {
                                 verRelease2 = Integer.parseInt(verPart[0] + verPart[1] + verPart[2]);
                             }
+                            
+                            int verRelease3 = 0;
+                            
+                            if (dest.maxVersion!=null) {
+                                String[] subVersionsMax = dest.maxVersion.split("-");
+                                verPart = subVersionsMax[0].split("\\.");
+
+                                if (verPart.length > 2) {
+                                    verRelease3 = Integer.parseInt(verPart[0] + verPart[1] + verPart[2]);
+                                }
+                            }
                            
                             if (subVersions.length > 1 && verRelease1==verRelease2) {
                                 File versionFolder = new File(basedir + "/" + versionOrderDir + "/" + server + "/" + subVersions[0]);
@@ -92,7 +103,7 @@ public class ProcessSources {
                                         }
                                     }
                                 }
-                            } else if (verRelease1>=verRelease2) {
+                            } else if (verRelease1>=verRelease2 && (verRelease3==0 || verRelease1<=verRelease3)) {
                                 System.out.println(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName);
                                 copyWithStreams(file, new File(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName),false);
                             }
@@ -112,7 +123,7 @@ public class ProcessSources {
         String[] destinations = null;
         String annotationLine = null;
         ArrayList<FileData> result = new ArrayList<FileData>();
-        String packageName = null;
+        String packageName = "";
         File f = new File(file);
 
         BufferedReader reader = null;
@@ -128,11 +139,15 @@ public class ProcessSources {
                     destinations = annotationLine.split("\"");
                     for (String path : destinations) {
                         if (!path.contains(",") && path.contains("/" + server + "/")) {
-                            if (!path.contains("#"))
-                                result.add(new FileData(f.getName(),packageName.replaceAll("\\.", "/"),path,null));
-                            else {
+                            if (!path.contains("#") && !path.contains("*"))
+                                result.add(new FileData(f.getName(),packageName.replaceAll("\\.", "/"),path,null,null));
+                            else if (!path.contains("*")) {
                                 String[] pathVersion = path.split("#");
-                                result.add(new FileData(f.getName(),packageName.replaceAll("\\.", "/"),pathVersion[0],pathVersion[1]));
+                                result.add(new FileData(f.getName(),packageName.replaceAll("\\.", "/"),pathVersion[0],pathVersion[1],null));
+                            } else {
+                                String[] pathVersion = path.split("\\*");
+                                String[] pathVersion2 = pathVersion[0].split("#");
+                                result.add(new FileData(f.getName(),packageName.replaceAll("\\.", "/"),pathVersion2[0],pathVersion2[1],pathVersion[1]));
                             }
                         }
                     }
@@ -216,12 +231,14 @@ class FileData {
     protected String packageName;
     protected String fileBaseDir;
     protected String minVersion;
+    protected String maxVersion;
 
-    public FileData(String fileName, String packageName, String fileBaseDir, String minVersion) {
+    public FileData(String fileName, String packageName, String fileBaseDir, String minVersion, String maxVersion) {
         this.fileName = fileName;
         this.packageName = packageName;
         this.fileBaseDir = fileBaseDir;
         this.minVersion = minVersion;
+        this.maxVersion = maxVersion;
     }
 
 }
