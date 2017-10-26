@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.jboss.eap.additional.testsuite</groupId>
     <artifactId>eap-additional-testsuite-source-distribution</artifactId>
-    <version>1.0.2.Final</version>
+    <version>1.0.3.Final</version>
     <packaging>jar</packaging>
     
     <properties>
