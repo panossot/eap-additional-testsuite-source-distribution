@@ -28,6 +28,6 @@ import java.lang.annotation.Target;
  */
 @Inherited
 @Target({METHOD})
-public @interface ATMethod {
+public @interface ATTest {
     String[] value() default "";
 }

@@ -286,7 +286,7 @@ public class ProcessSources {
     private static boolean checkMethodInclusion(File file, String server, String basedir, String version, String versionOrderDir) throws ClassNotFoundException, IOException {
         boolean include = false;
 
-        ArrayList<FileData> output = checkFileForAnnotations(file.getAbsolutePath(), "@ATMethod", server);
+        ArrayList<FileData> output = checkFileForAnnotations(file.getAbsolutePath(), "@ATTest", server);
         for (FileData dest : output) {
             if (dest.minVersion != null) {
                 String[] versionRelease = version.split("-");
