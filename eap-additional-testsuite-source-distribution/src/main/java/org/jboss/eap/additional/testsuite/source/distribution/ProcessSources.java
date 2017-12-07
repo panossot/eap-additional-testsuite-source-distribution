@@ -29,10 +29,16 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.RandomAccessFile;
+import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  *
@@ -53,10 +59,9 @@ public class ProcessSources {
                 if (file.isDirectory()) {
                     AdditionalTestSuiteAnnotationProcessing(basedir, file.getAbsolutePath(), server, version, versionOrderDir);
                 } else {
-                    ArrayList<FileData> output = checkFileForAnnotation(file.getAbsolutePath(), "@EapAdditionalTestsuite",server);
+                    ArrayList<FileData> output = checkFileForAnnotation(file.getAbsolutePath(), "@EapAdditionalTestsuite", server);
                     for (FileData dest : output) {
-                        if (dest.minVersion!=null)
-                        {
+                        if (dest.minVersion != null) {
                             String[] versionRelease = version.split("-");
                             int verRelease1 = 0;
                             String[] verPart = versionRelease[0].split("\\.");
@@ -69,10 +74,10 @@ public class ProcessSources {
                             if (verPart.length > 2) {
                                 verRelease2 = Integer.parseInt(verPart[0] + verPart[1] + verPart[2]);
                             }
-                            
+
                             int verRelease3 = 0;
-                            
-                            if (dest.maxVersion!=null) {
+
+                            if (dest.maxVersion != null) {
                                 String[] subVersionsMax = dest.maxVersion.split("-");
                                 verPart = subVersionsMax[0].split("\\.");
 
@@ -80,22 +85,23 @@ public class ProcessSources {
                                     verRelease3 = Integer.parseInt(verPart[0] + verPart[1] + verPart[2]);
                                 }
                             }
-                           
-                            if (subVersions.length > 1 && verRelease1==verRelease2) {
+
+                            if (subVersions.length > 1 && verRelease1 == verRelease2) {
                                 File versionFolder = new File(basedir + "/" + versionOrderDir + "/" + server + "/" + subVersions[0]);
                                 if (versionFolder.exists()) {
                                     String versionsString = readFile(basedir + "/" + versionOrderDir + "/" + server + "/" + subVersions[0]);
-                                    if (versionsString!=null && versionsString.contains(subVersions[1])) {
+                                    if (versionsString != null && versionsString.contains(subVersions[1])) {
                                         String[] versions = versionsString.substring(versionsString.indexOf(subVersions[1])).split(",");
                                         for (String versionPart : versionRelease) {
                                             if (versionPart.contains(".")) {
                                                 String[] versionNums = versionPart.split("\\.");
-                                                String lastPart = versionNums[versionNums.length-1];
+                                                String lastPart = versionNums[versionNums.length - 1];
                                                 if (!lastPart.matches("[0-9]+")) {
                                                     for (String ver : versions) {
-                                                        if (lastPart.contains(ver) || lastPart.compareTo(ver)==0) {
+                                                        if (lastPart.contains(ver) || lastPart.compareTo(ver) == 0) {
                                                             System.out.println(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName);
-                                                            copyWithStreams(file, new File(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName),false);
+                                                            copyWithStreams(file, new File(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName), false);
+                                                            checkMethodInclusion(file, server, basedir, version, versionOrderDir);
                                                         }
                                                     }
                                                 }
@@ -103,13 +109,15 @@ public class ProcessSources {
                                         }
                                     }
                                 }
-                            } else if (verRelease1>=verRelease2 && (verRelease3==0 || verRelease1<=verRelease3)) {
+                            } else if (verRelease1 >= verRelease2 && (verRelease3 == 0 || verRelease1 <= verRelease3)) {
                                 System.out.println(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName);
-                                copyWithStreams(file, new File(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName),false);
+                                copyWithStreams(file, new File(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName), false);
+                                checkMethodInclusion(file, server, basedir, version, versionOrderDir);
                             }
                         } else {
                             System.out.println(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName);
-                            copyWithStreams(file, new File(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName),false);
+                            copyWithStreams(file, new File(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName), false);
+                            checkMethodInclusion(file, server, basedir, version, versionOrderDir);
                         }
                     }
                 }
@@ -119,7 +127,7 @@ public class ProcessSources {
         }
     }
 
-    public static ArrayList<FileData> checkFileForAnnotation(String file, String annotationName,String server) throws ClassNotFoundException {
+    public static ArrayList<FileData> checkFileForAnnotation(String file, String annotationName, String server) throws ClassNotFoundException {
         String[] destinations = null;
         String annotationLine = null;
         ArrayList<FileData> result = new ArrayList<FileData>();
@@ -139,15 +147,15 @@ public class ProcessSources {
                     destinations = annotationLine.split("\"");
                     for (String path : destinations) {
                         if (!path.contains(",") && path.contains("/" + server + "/")) {
-                            if (!path.contains("#") && !path.contains("*"))
-                                result.add(new FileData(f.getName(),packageName.replaceAll("\\.", "/"),path,null,null));
-                            else if (!path.contains("*")) {
+                            if (!path.contains("#") && !path.contains("*")) {
+                                result.add(new FileData(f.getName(), packageName.replaceAll("\\.", "/"), path, null, null));
+                            } else if (!path.contains("*")) {
                                 String[] pathVersion = path.split("#");
-                                result.add(new FileData(f.getName(),packageName.replaceAll("\\.", "/"),pathVersion[0],pathVersion[1],null));
+                                result.add(new FileData(f.getName(), packageName.replaceAll("\\.", "/"), pathVersion[0], pathVersion[1], null));
                             } else {
                                 String[] pathVersion = path.split("\\*");
                                 String[] pathVersion2 = pathVersion[0].split("#");
-                                result.add(new FileData(f.getName(),packageName.replaceAll("\\.", "/"),pathVersion2[0],pathVersion2[1],pathVersion[1]));
+                                result.add(new FileData(f.getName(), packageName.replaceAll("\\.", "/"), pathVersion2[0], pathVersion2[1], pathVersion[1]));
                             }
                         }
                     }
@@ -169,6 +177,57 @@ public class ProcessSources {
         return result;
     }
     
+    public static ArrayList<FileData> checkFileForAnnotations(String file, String annotationName, String server) throws ClassNotFoundException {
+        String[] destinations = null;
+        String annotationLine = null;
+        ArrayList<FileData> result = new ArrayList<FileData>();
+        String packageName = "";
+        File f = new File(file);
+
+        BufferedReader reader = null;
+        try {
+            reader = new BufferedReader(new FileReader(file));
+            String line;
+            int lineNum = 0;
+            while ((line = reader.readLine()) != null) {
+                lineNum++;
+                if (line.startsWith("package")) {
+                    packageName = line.replaceAll("package ", "").replaceAll(";", "").trim();
+                }
+                if (line.contains(annotationName)) {
+                    annotationLine = line;
+                    destinations = annotationLine.split("\"");
+                    for (String path : destinations) {
+                        if (!path.contains(",") && path.contains("/" + server + "/")) {
+                            if (!path.contains("#") && !path.contains("*")) {
+                                result.add(new FileData(f.getName(), packageName.replaceAll("\\.", "/"), path, null, null,lineNum));
+                            } else if (!path.contains("*")) {
+                                String[] pathVersion = path.split("#");
+                                result.add(new FileData(f.getName(), packageName.replaceAll("\\.", "/"), pathVersion[0], pathVersion[1], null,lineNum));
+                            } else {
+                                String[] pathVersion = path.split("\\*");
+                                String[] pathVersion2 = pathVersion[0].split("#");
+                                result.add(new FileData(f.getName(), packageName.replaceAll("\\.", "/"), pathVersion2[0], pathVersion2[1], pathVersion[1],lineNum));
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        } finally {
+            if (reader != null) {
+                try {
+                    reader.close();
+                } catch (IOException ex) {
+                    ex.printStackTrace();
+                }
+            }
+        }
+
+        return result;
+    }
+
     private static String readFile(String file) throws FileNotFoundException, IOException {
         BufferedReader br = new BufferedReader(new FileReader(file));
         StringBuilder sb = new StringBuilder();
@@ -183,7 +242,7 @@ public class ProcessSources {
         } finally {
             br.close();
         }
-        
+
         return sb.toString();
     }
 
@@ -224,14 +283,93 @@ public class ProcessSources {
         }
     }
 
+    private static boolean checkMethodInclusion(File file, String server, String basedir, String version, String versionOrderDir) throws ClassNotFoundException, IOException {
+        boolean include = false;
+
+        ArrayList<FileData> output = checkFileForAnnotations(file.getAbsolutePath(), "@ATMethod", server);
+        for (FileData dest : output) {
+            if (dest.minVersion != null) {
+                String[] versionRelease = version.split("-");
+                int verRelease1 = 0;
+                String[] verPart = versionRelease[0].split("\\.");
+                if (verPart.length > 2) {
+                    verRelease1 = Integer.parseInt(verPart[0] + verPart[1] + verPart[2]);
+                }
+                String[] subVersions = dest.minVersion.split("-");
+                verPart = subVersions[0].split("\\.");
+                int verRelease2 = 0;
+                if (verPart.length > 2) {
+                    verRelease2 = Integer.parseInt(verPart[0] + verPart[1] + verPart[2]);
+                }
+
+                int verRelease3 = 0;
+
+                if (dest.maxVersion != null) {
+                    String[] subVersionsMax = dest.maxVersion.split("-");
+                    verPart = subVersionsMax[0].split("\\.");
+
+                    if (verPart.length > 2) {
+                        verRelease3 = Integer.parseInt(verPart[0] + verPart[1] + verPart[2]);
+                    }
+                }
+
+                if (subVersions.length > 1 && verRelease1 == verRelease2) {
+                    File versionFolder = new File(basedir + "/" + versionOrderDir + "/" + server + "/" + subVersions[0]);
+                    if (versionFolder.exists()) {
+                        String versionsString = readFile(basedir + "/" + versionOrderDir + "/" + server + "/" + subVersions[0]);
+                        if (versionsString != null && versionsString.contains(subVersions[1])) {
+                            String[] versions = versionsString.substring(versionsString.indexOf(subVersions[1])).split(",");
+                            for (String versionPart : versionRelease) {
+                                if (versionPart.contains(".")) {
+                                    String[] versionNums = versionPart.split("\\.");
+                                    String lastPart = versionNums[versionNums.length - 1];
+                                    if (!lastPart.matches("[0-9]+")) {
+                                        for (String ver : versions) {
+                                            if (lastPart.contains(ver) || lastPart.compareTo(ver) == 0) {
+                                                System.out.println(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName);
+                                                enableTests(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName,output);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                } else if (verRelease1 >= verRelease2 && (verRelease3 == 0 || verRelease1 <= verRelease3)) {
+                    System.out.println(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName);
+                    enableTests(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName,output);
+                }
+            } else {
+                System.out.println(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName);
+                enableTests(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName,output);
+            }
+        }
+
+        return include;
+    }
+
+    public static void enableTests(String file, ArrayList<FileData> fileData) throws FileNotFoundException, IOException {
+        File f = new File(file);
+        List<String> lines = Files.readAllLines(Paths.get(file),Charset.defaultCharset());
+
+        if (fileData!=null && fileData.size()!=0) {
+            
+            for (FileData fd : fileData){
+                lines.set(fd.lineNum-1, lines.get(fd.lineNum-1) + " @Test");
+                Files.write(Paths.get(file),lines,Charset.defaultCharset());
+            }
+        }
+    }
 }
 
 class FileData {
+
     protected String fileName;
     protected String packageName;
     protected String fileBaseDir;
     protected String minVersion;
     protected String maxVersion;
+    protected int lineNum;
 
     public FileData(String fileName, String packageName, String fileBaseDir, String minVersion, String maxVersion) {
         this.fileName = fileName;
@@ -239,6 +377,15 @@ class FileData {
         this.fileBaseDir = fileBaseDir;
         this.minVersion = minVersion;
         this.maxVersion = maxVersion;
+    }
+    
+    public FileData(String fileName, String packageName, String fileBaseDir, String minVersion, String maxVersion, int lineNum) {
+        this.fileName = fileName;
+        this.packageName = packageName;
+        this.fileBaseDir = fileBaseDir;
+        this.minVersion = minVersion;
+        this.maxVersion = maxVersion;
+        this.lineNum = lineNum;
     }
 
 }
