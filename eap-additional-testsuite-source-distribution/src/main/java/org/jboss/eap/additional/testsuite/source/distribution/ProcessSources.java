@@ -401,7 +401,7 @@ public class ProcessSources {
                 lines.set(j, "/* " + lines.get(j) + " */");
             }
             if (testExist) {    
-                if(!ignoreExists && lines.get(j).contains("class") && lines.get(j).contains(fileName.replaceAll(".java","")) && !lines.get(j).contains("@ServerSetup")){
+                if(!ignoreExists && lines.get(j).contains(" class") && lines.get(j).contains(fileName.replaceAll(".java",""))){
                     lines.set(j-1, "@org.junit.Ignore" + lines.get(j-1));
                     break;
                 }
