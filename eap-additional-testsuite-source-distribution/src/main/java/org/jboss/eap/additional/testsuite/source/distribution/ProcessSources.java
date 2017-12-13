@@ -29,11 +29,9 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.RandomAccessFile;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -46,7 +44,7 @@ import java.util.List;
  */
 public class ProcessSources {
 
-    public static void AdditionalTestSuiteAnnotationProcessing(String basedir, String sourcePath, String server, String version, String versionOrderDir) {
+    public static void AdditionalTestSuiteAnnotationProcessing(String basedir, String sourcePath, String server, String version, String versionOrderDir, boolean disableAllTests) {
         File folder = new File(sourcePath);
         File[] listOfFiles = folder.listFiles();
 
@@ -57,7 +55,7 @@ public class ProcessSources {
         try {
             for (File file : listOfFiles) {
                 if (file.isDirectory()) {
-                    AdditionalTestSuiteAnnotationProcessing(basedir, file.getAbsolutePath(), server, version, versionOrderDir);
+                    AdditionalTestSuiteAnnotationProcessing(basedir, file.getAbsolutePath(), server, version, versionOrderDir, disableAllTests);
                 } else {
                     ArrayList<FileData> output = checkFileForAnnotation(file.getAbsolutePath(), "@EapAdditionalTestsuite", server);
                     for (FileData dest : output) {
@@ -101,6 +99,8 @@ public class ProcessSources {
                                                         if (lastPart.contains(ver) || lastPart.compareTo(ver) == 0) {
                                                             System.out.println(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName);
                                                             copyWithStreams(file, new File(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName), false);
+                                                            if (disableAllTests)
+                                                                disableTests(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName, dest.fileName);
                                                             checkMethodInclusion(file, server, basedir, version, versionOrderDir);
                                                         }
                                                     }
@@ -112,11 +112,15 @@ public class ProcessSources {
                             } else if (verRelease1 >= verRelease2 && (verRelease3 == 0 || verRelease1 <= verRelease3)) {
                                 System.out.println(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName);
                                 copyWithStreams(file, new File(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName), false);
+                                if (disableAllTests)
+                                    disableTests(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName, dest.fileName);
                                 checkMethodInclusion(file, server, basedir, version, versionOrderDir);
                             }
                         } else {
                             System.out.println(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName);
                             copyWithStreams(file, new File(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName), false);
+                            if (disableAllTests)
+                                disableTests(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName, dest.fileName);
                             checkMethodInclusion(file, server, basedir, version, versionOrderDir);
                         }
                     }
@@ -285,7 +289,7 @@ public class ProcessSources {
 
     private static boolean checkMethodInclusion(File file, String server, String basedir, String version, String versionOrderDir) throws ClassNotFoundException, IOException {
         boolean include = false;
-
+        
         ArrayList<FileData> output = checkFileForAnnotations(file.getAbsolutePath(), "@ATTest", server);
         for (FileData dest : output) {
             if (dest.minVersion != null) {
@@ -327,7 +331,7 @@ public class ProcessSources {
                                         for (String ver : versions) {
                                             if (lastPart.contains(ver) || lastPart.compareTo(ver) == 0) {
                                                 System.out.println(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName);
-                                                enableTests(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName,output);
+                                                enableTests(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName,output,dest.fileName);
                                             }
                                         }
                                     }
@@ -337,28 +341,74 @@ public class ProcessSources {
                     }
                 } else if (verRelease1 >= verRelease2 && (verRelease3 == 0 || verRelease1 <= verRelease3)) {
                     System.out.println(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName);
-                    enableTests(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName,output);
+                    enableTests(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName,output,dest.fileName);
                 }
             } else {
                 System.out.println(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName);
-                enableTests(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName,output);
+                enableTests(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName,output,dest.fileName);
             }
         }
 
         return include;
     }
 
-    public static void enableTests(String file, ArrayList<FileData> fileData) throws FileNotFoundException, IOException {
-        File f = new File(file);
+    public static void enableTests(String file, ArrayList<FileData> fileData, String fileName) throws FileNotFoundException, IOException {
+        
         List<String> lines = Files.readAllLines(Paths.get(file),Charset.defaultCharset());
-
+        
         if (fileData!=null && fileData.size()!=0) {
             
+            for (int j=0;j<lines.size();j++){
+                if(lines.get(j).contains("/* @RunWith(Arquillian.class) */")){
+                    lines.set(j, lines.get(j).replaceAll("/* @RunWith(Arquillian.class) */","@RunWith(Arquillian.class)"));
+                }
+                if(lines.get(j).contains("class") && lines.get(j).contains(fileName.replaceAll(".java","")) && lines.get(j-1).contains("@org.junit.Ignore")){
+                    lines.set(j-1, lines.get(j-1).replaceAll("@org.junit.Ignore",""));
+                    break;
+                }
+            }
+            
             for (FileData fd : fileData){
-                lines.set(fd.lineNum-1, lines.get(fd.lineNum-1) + " @Test");
-                Files.write(Paths.get(file),lines,Charset.defaultCharset());
+                if(!lines.get(fd.lineNum-1).contains("@Test"))
+                    lines.set(fd.lineNum-1, lines.get(fd.lineNum-1) + " @Test");
+            }
+            
+            Files.write(Paths.get(file),lines,Charset.defaultCharset());
+        }
+    }
+    
+    public static void disableTests(String file, String fileName) throws FileNotFoundException, IOException {
+        List<String> lines = Files.readAllLines(Paths.get(file),Charset.defaultCharset());
+        boolean testExist = false;
+        
+        int i=0;    
+        for (String line : lines){
+            if (line.contains("@Test")){
+                testExist=true;
+            }
+            line=line.replaceAll("@Test","");
+            lines.set(i, line);
+            i++;
+        }
+        
+        
+        boolean ignoreExists = false;
+        for (int j=0;j<lines.size();j++){
+            if (lines.get(j).contains("@Ignore")) {
+                ignoreExists = true;
+            }
+            if(lines.get(j).contains("@RunWith(Arquillian.class)")){
+                lines.set(j, "/* " + lines.get(j) + " */");
+            }
+            if (testExist) {    
+                if(!ignoreExists && lines.get(j).contains("class") && lines.get(j).contains(fileName.replaceAll(".java","")) && !lines.get(j).contains("@ServerSetup")){
+                    lines.set(j-1, "@org.junit.Ignore" + lines.get(j-1));
+                    break;
+                }
             }
         }
+        
+        Files.write(Paths.get(file),lines,Charset.defaultCharset());
     }
 }
 
