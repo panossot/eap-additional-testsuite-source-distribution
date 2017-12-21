@@ -36,7 +36,8 @@ public class AdditionalTestsuiteDistributeSources {
      * args[2] : the server to distribute the sources to
      */
     public static void main(String[] args) throws IOException {
-        ProcessSources.AdditionalTestSuiteAnnotationProcessing(args[0],args[1],args[2],args[3],args[4],Boolean.parseBoolean(args[5]));
+        ProcessSources.AdditionalTestSuiteAnnotationProcessing(args[0],args[1],args[2],args[3],args[4],Boolean.parseBoolean(args[5]),args[6]);
+     //   ProcessSources.AdditionalTestSuiteAnnotationProcessing("/home/panos/RC/eap-additional-testsuite3","/home/panos/RC/eap-additional-testsuite3/modules/src/main/java","Wildfly","12.0.0.Alpha1-SNAPSHOT","vesrionOrder",Boolean.parseBoolean(null),"/home/panos/RC/eap-additional-testsuite-source-distribution/eap-additional-testsuite-source-distribution/features.txt");
     }
     
 }
