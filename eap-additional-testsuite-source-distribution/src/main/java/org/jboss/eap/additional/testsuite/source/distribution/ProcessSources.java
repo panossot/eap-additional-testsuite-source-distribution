@@ -45,71 +45,18 @@ import java.util.List;
  */
 public class ProcessSources {
 
-    public static void AdditionalTestSuiteAnnotationProcessing(String basedir, String sourcePath, String server, String version, String versionOrderDir, boolean disableAllTests, String featureListFile) {
+    public static void AdditionalTestSuiteAnnotationProcessing(String basedir, String sourcePath, String server, String version, String versionOrderDir, boolean disableAllTests, FeatureData featureDataList) {
         File folder = new File(sourcePath);
         File[] listOfFiles = folder.listFiles();
 
         if (listOfFiles == null) {
             return;
         }
-        
-        File featureList = new File(featureListFile);
-        FeatureData featureDataList = new FeatureData();
-        if (featureList.exists()) {
-            try {
-                BufferedReader in = new BufferedReader(
-                                       new FileReader(featureListFile));
-                String str;
-
-                while ((str = in.readLine())!= null) {
-                    String[] ar=str.split(",");
-
-                    if(ar.length==1){
-                        featureDataList.feature.add(ar[0].trim());
-                        featureDataList.minVersion.add(null);
-                        featureDataList.maxVersion.add(null);
-                        featureDataList.resource.add(null);
-                        featureDataList.params.add(null);
-                    }else if(ar.length==2){
-                        featureDataList.feature.add(ar[0].trim());
-                        featureDataList.minVersion.add(ar[1].trim());
-                        featureDataList.maxVersion.add(null);
-                        featureDataList.resource.add(null);
-                        featureDataList.params.add(null);
-                    }else if(ar.length==3){
-                        featureDataList.feature.add(ar[0].trim());
-                        featureDataList.minVersion.add(ar[1].trim());
-                        featureDataList.maxVersion.add(ar[2].trim());
-                        featureDataList.resource.add(null);
-                        featureDataList.params.add(null);
-                    }else if(ar.length==4){
-                        featureDataList.feature.add(ar[0].trim());
-                        featureDataList.minVersion.add(ar[1].trim());
-                        featureDataList.maxVersion.add(ar[2].trim());
-                        featureDataList.resource.add(ar[3].trim());
-                        featureDataList.params.add(null);
-                    }else if(ar.length>4){
-                        featureDataList.feature.add(ar[0].trim());
-                        featureDataList.minVersion.add(ar[1].trim());
-                        featureDataList.maxVersion.add(ar[2].trim());
-                        featureDataList.resource.add(ar[3].trim());
-                        String parameters = "";
-                        for (int i=4; i<ar.length; i++) {
-                            parameters = parameters + ar[i].trim() + ",";
-                        }
-                        featureDataList.params.add(parameters);
-                    }
-                }
-                in.close();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
 
         try {
             for (File file : listOfFiles) {
                 if (file.isDirectory()) {
-                    AdditionalTestSuiteAnnotationProcessing(basedir, file.getAbsolutePath(), server, version, versionOrderDir, disableAllTests, featureListFile);
+                    AdditionalTestSuiteAnnotationProcessing(basedir, file.getAbsolutePath(), server, version, versionOrderDir, disableAllTests, featureDataList);
                 } else {
                     ArrayList<FileData> output = checkFileForAnnotation(file.getAbsolutePath(), "@EapAdditionalTestsuite", server);
                     for (FileData dest : output) {
@@ -153,10 +100,11 @@ public class ProcessSources {
                                                         if (lastPart.contains(ver) || lastPart.compareTo(ver) == 0) {
                                                             System.out.println(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName);
                                                             copyWithStreams(file, new File(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName), false);
-                                                            if (disableAllTests)
+                                                            if (disableAllTests) {
                                                                 disableTests(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName, dest.fileName);
+                                                            }
                                                             String destFile = basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName;
-                                                            checkMethodInclusion(file, destFile, server, basedir, version, versionOrderDir,featureDataList);
+                                                            checkMethodInclusion(file, destFile, server, basedir, version, versionOrderDir, featureDataList);
                                                         }
                                                     }
                                                 }
@@ -167,18 +115,20 @@ public class ProcessSources {
                             } else if (verRelease1 >= verRelease2 && (verRelease3 == 0 || verRelease1 <= verRelease3)) {
                                 System.out.println(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName);
                                 copyWithStreams(file, new File(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName), false);
-                                if (disableAllTests)
+                                if (disableAllTests) {
                                     disableTests(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName, dest.fileName);
+                                }
                                 String destFile = basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName;
-                                checkMethodInclusion(file, destFile, server, basedir, version, versionOrderDir,featureDataList);
+                                checkMethodInclusion(file, destFile, server, basedir, version, versionOrderDir, featureDataList);
                             }
                         } else {
                             System.out.println(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName);
                             copyWithStreams(file, new File(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName), false);
-                            if (disableAllTests)
+                            if (disableAllTests) {
                                 disableTests(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName, dest.fileName);
+                            }
                             String destFile = basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName;
-                            checkMethodInclusion(file, destFile, server, basedir, version, versionOrderDir,featureDataList);
+                            checkMethodInclusion(file, destFile, server, basedir, version, versionOrderDir, featureDataList);
                         }
                     }
                 }
@@ -237,7 +187,7 @@ public class ProcessSources {
 
         return result;
     }
-    
+
     public static ArrayList<FileData> checkFileForAnnotations(String file, String annotationName, String server) throws ClassNotFoundException {
         String[] destinations = null;
         String annotationLine = null;
@@ -261,14 +211,14 @@ public class ProcessSources {
                     for (String path : destinations) {
                         if (!path.contains(",") && path.contains("/" + server + "/")) {
                             if (!path.contains("#") && !path.contains("*")) {
-                                result.add(new FileData(f.getName(), packageName.replaceAll("\\.", "/"), path, null, null,lineNum));
+                                result.add(new FileData(f.getName(), packageName.replaceAll("\\.", "/"), path, null, null, lineNum));
                             } else if (!path.contains("*")) {
                                 String[] pathVersion = path.split("#");
-                                result.add(new FileData(f.getName(), packageName.replaceAll("\\.", "/"), pathVersion[0], pathVersion[1], null,lineNum));
+                                result.add(new FileData(f.getName(), packageName.replaceAll("\\.", "/"), pathVersion[0], pathVersion[1], null, lineNum));
                             } else {
                                 String[] pathVersion = path.split("\\*");
                                 String[] pathVersion2 = pathVersion[0].split("#");
-                                result.add(new FileData(f.getName(), packageName.replaceAll("\\.", "/"), pathVersion2[0], pathVersion2[1], pathVersion[1],lineNum));
+                                result.add(new FileData(f.getName(), packageName.replaceAll("\\.", "/"), pathVersion2[0], pathVersion2[1], pathVersion[1], lineNum));
                             }
                         }
                     }
@@ -288,7 +238,7 @@ public class ProcessSources {
 
         return result;
     }
-    
+
     public static ArrayList<FeatureData> checkFileForFeatures(String file, String annotationName) throws ClassNotFoundException {
         String annotationLine;
         ArrayList<FeatureData> result = new ArrayList<>();
@@ -303,31 +253,39 @@ public class ProcessSources {
                 lineNum++;
                 if (line.contains(annotationName)) {
                     annotationLine = line;
-                    String[] features = annotationLine.substring(annotationLine.lastIndexOf("feature={\"")+10, annotationLine.indexOf("\"}")).split(",");
+                    String[] features = annotationLine.substring(annotationLine.lastIndexOf("feature={\"") + 10, annotationLine.indexOf("\"}")).split(",");
                     String[] minVersions = null;
-                    if (annotationLine.lastIndexOf("minVersion={\"")!=-1)
-                        minVersions = annotationLine.substring(annotationLine.lastIndexOf("minVersion={\"")+13, annotationLine.lastIndexOf("minVersion={\"")+13 + annotationLine.substring(annotationLine.lastIndexOf("minVersion={\"")+13).indexOf("\"}")).split(",");
-                    String[] maxVersions= null;
-                    if (annotationLine.lastIndexOf("maxVersion={\"")!=-1)
-                        maxVersions = annotationLine.substring(annotationLine.lastIndexOf("maxVersion={\"")+13, annotationLine.lastIndexOf("maxVersion={\"")+13 + annotationLine.substring(annotationLine.lastIndexOf("maxVersion={\"")+13).indexOf("\"}")).split(",");
+                    if (annotationLine.lastIndexOf("minVersion={\"") != -1) {
+                        minVersions = annotationLine.substring(annotationLine.lastIndexOf("minVersion={\"") + 13, annotationLine.lastIndexOf("minVersion={\"") + 13 + annotationLine.substring(annotationLine.lastIndexOf("minVersion={\"") + 13).indexOf("\"}")).split(",");
+                    }
+                    String[] maxVersions = null;
+                    if (annotationLine.lastIndexOf("maxVersion={\"") != -1) {
+                        maxVersions = annotationLine.substring(annotationLine.lastIndexOf("maxVersion={\"") + 13, annotationLine.lastIndexOf("maxVersion={\"") + 13 + annotationLine.substring(annotationLine.lastIndexOf("maxVersion={\"") + 13).indexOf("\"}")).split(",");
+                    }
                     String[] resources = null;
-                    if (annotationLine.lastIndexOf("resource={\"")!=-1)
-                        resources = annotationLine.substring(annotationLine.lastIndexOf("resource={\"")+11, annotationLine.lastIndexOf("resource={\"")+11 + annotationLine.substring(annotationLine.lastIndexOf("resource={\"")+11).indexOf("\"}")).split(",");
+                    if (annotationLine.lastIndexOf("resource={\"") != -1) {
+                        resources = annotationLine.substring(annotationLine.lastIndexOf("resource={\"") + 11, annotationLine.lastIndexOf("resource={\"") + 11 + annotationLine.substring(annotationLine.lastIndexOf("resource={\"") + 11).indexOf("\"}")).split(",");
+                    }
                     String[] params = null;
-                    if (annotationLine.lastIndexOf("params={{")!=-1)
-                        params = annotationLine.substring(annotationLine.lastIndexOf("params={{")+9, annotationLine.lastIndexOf("params={{")+9 + annotationLine.substring(annotationLine.lastIndexOf("params={{")+9).indexOf("\"}}")).split("\"");
+                    if (annotationLine.lastIndexOf("params={{") != -1) {
+                        params = annotationLine.substring(annotationLine.lastIndexOf("params={{") + 9, annotationLine.lastIndexOf("params={{") + 9 + annotationLine.substring(annotationLine.lastIndexOf("params={{") + 9).indexOf("\"}}")).split("\"");
+                    }
                     FeatureData fd = new FeatureData();
-                    fd.lineNum=lineNum;
-                    Collections.addAll(fd.feature,features);
-                    if (minVersions!=null)
-                        Collections.addAll(fd.minVersion,minVersions);
-                    if (maxVersions!=null)
-                        Collections.addAll(fd.maxVersion,maxVersions);
-                    if (resources!=null)
-                        Collections.addAll(fd.resource,resources);
-                    if (params!=null)
-                        Collections.addAll(fd.params,params);
-                    
+                    fd.lineNum = lineNum;
+                    Collections.addAll(fd.feature, features);
+                    if (minVersions != null) {
+                        Collections.addAll(fd.minVersion, minVersions);
+                    }
+                    if (maxVersions != null) {
+                        Collections.addAll(fd.maxVersion, maxVersions);
+                    }
+                    if (resources != null) {
+                        Collections.addAll(fd.resource, resources);
+                    }
+                    if (params != null) {
+                        Collections.addAll(fd.params, params);
+                    }
+
                     result.add(fd);
                 }
             }
@@ -402,7 +360,7 @@ public class ProcessSources {
     }
 
     private static void checkMethodInclusion(File file, String destFile, String server, String basedir, String version, String versionOrderDir, FeatureData featureDataList) throws ClassNotFoundException, IOException {
-        
+
         ArrayList<FileData> output = checkFileForAnnotations(file.getAbsolutePath(), "@ATTest", server);
         for (FileData dest : output) {
             if (dest.minVersion != null) {
@@ -444,7 +402,7 @@ public class ProcessSources {
                                         for (String ver : versions) {
                                             if (lastPart.contains(ver) || lastPart.compareTo(ver) == 0) {
                                                 System.out.println(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName);
-                                                enableTests(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName,output,dest.fileName);
+                                                enableTests(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName, output, dest.fileName);
                                             }
                                         }
                                     }
@@ -454,32 +412,30 @@ public class ProcessSources {
                     }
                 } else if (verRelease1 >= verRelease2 && (verRelease3 == 0 || verRelease1 <= verRelease3)) {
                     System.out.println(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName);
-                    enableTests(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName,output,dest.fileName);
+                    enableTests(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName, output, dest.fileName);
                 }
             } else {
                 System.out.println(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName);
-                enableTests(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName,output,dest.fileName);
+                enableTests(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName, output, dest.fileName);
             }
         }
 
-        if (file.getAbsolutePath().contains("CalendarTimeoutTestCase")){
-            System.out.println("Found");
-        }
         ArrayList<FeatureData> features = checkFileForFeatures(file.getAbsolutePath(), "@ATFeature");
         ArrayList<FeatureData> featureLineData = new ArrayList();
         for (FeatureData featureLine : features) {
             int fd = -1;
             int featuresOk = 0;
-            for (int i=0; i<featureLine.feature.size(); i++) {
-                
-                if (!featureDataList.feature.contains(featureLine.feature.get(i)))
+            for (int i = 0; i < featureLine.feature.size(); i++) {
+
+                if (!featureDataList.feature.contains(featureLine.feature.get(i))) {
                     break;
-               
+                }
+
                 fd = featureDataList.feature.indexOf(featureLine.feature.get(i));
-                
+
                 boolean phaseOK = false;
-                
-                while (fd!=-1) {
+
+                while (fd != -1) {
                     phaseOK = false;
 
                     if (!featureLine.minVersion.isEmpty() && featureLine.minVersion.get(i) != null) {
@@ -488,16 +444,16 @@ public class ProcessSources {
                         String[] verPart = versionRelease[0].split("\\.");
                         if (verPart.length > 2) {
                             verRelease1 = Integer.parseInt(verPart[0] + verPart[1] + verPart[2]);
-                        }else if(verPart[0].compareTo("null")!=0) {
+                        } else if (verPart[0].compareTo("null") != 0) {
                             verRelease1 = Integer.parseInt(verPart[0]);
                         }
-                        
+
                         String[] subVersions = featureLine.minVersion.get(i).split("-");
                         verPart = subVersions[0].split("\\.");
                         int verRelease2 = 0;
                         if (verPart.length > 2) {
                             verRelease2 = Integer.parseInt(verPart[0] + verPart[1] + verPart[2]);
-                        }else if(verPart[0].compareTo("null")!=0) {
+                        } else if (verPart[0].compareTo("null") != 0) {
                             verRelease2 = Integer.parseInt(verPart[0]);
                         }
 
@@ -509,10 +465,10 @@ public class ProcessSources {
 
                             if (verPart.length > 2) {
                                 verRelease3 = Integer.parseInt(verPart[0] + verPart[1] + verPart[2]);
-                            }else if(verPart[0].compareTo("null")!=0) {
+                            } else if (verPart[0].compareTo("null") != 0) {
                                 verRelease3 = Integer.parseInt(verPart[0]);
                             }
-                        } 
+                        }
 
                         if (subVersions.length > 1 && verRelease1 == verRelease2) {
                             File versionFolder = new File(basedir + "/" + versionOrderDir + "/" + featureLine.feature.get(i) + "/" + subVersions[0]);
@@ -542,30 +498,30 @@ public class ProcessSources {
                         phaseOK = true;
                     }
 
-                    if (!featureLine.minVersion.isEmpty() && !phaseOK){
-                        fd = featureDataList.feature.subList(fd+1, featureDataList.feature.size()).indexOf(featureLine.feature.get(i));
+                    if (!featureLine.minVersion.isEmpty() && !phaseOK) {
+                        fd = featureDataList.feature.subList(fd + 1, featureDataList.feature.size()).indexOf(featureLine.feature.get(i));
                         continue;
                     }
-                    
 
                     if (!featureLine.resource.isEmpty() && featureLine.resource.get(i) != null) {
                         phaseOK = false;
-                        if (featureLine.resource.get(i).compareTo(featureDataList.resource.get(fd))==0)
+                        if (featureLine.resource.get(i).compareTo(featureDataList.resource.get(fd)) == 0) {
                             phaseOK = true;
+                        }
                     }
 
-                    if (!featureLine.resource.isEmpty() && !phaseOK){
-                        fd = featureDataList.feature.subList(fd+1, featureDataList.feature.size()).indexOf(featureLine.feature.get(i));
+                    if (!featureLine.resource.isEmpty() && !phaseOK) {
+                        fd = featureDataList.feature.subList(fd + 1, featureDataList.feature.size()).indexOf(featureLine.feature.get(i));
                         continue;
                     }
 
                     if (!featureLine.params.isEmpty() && featureLine.params.get(i) != null) {
                         String[] pms = featureLine.params.get(i).split(",");
 
-                        for(String p : pms){
-                            if (!featureDataList.params.get(fd).contains(p)){
+                        for (String p : pms) {
+                            if (!featureDataList.params.get(fd).contains(p)) {
                                 phaseOK = false;
-                                fd = featureDataList.feature.subList(fd+1, featureDataList.feature.size()).indexOf(featureLine.feature.get(i));
+                                fd = featureDataList.feature.subList(fd + 1, featureDataList.feature.size()).indexOf(featureLine.feature.get(i));
                                 continue;
                             }
                         }
@@ -575,108 +531,109 @@ public class ProcessSources {
                         featuresOk++;
                         fd = -1;
                         break;
-                    }else {
-                        fd = featureDataList.feature.subList(fd+1, featureDataList.feature.size()).indexOf(featureLine.feature.get(i));
+                    } else {
+                        fd = featureDataList.feature.subList(fd + 1, featureDataList.feature.size()).indexOf(featureLine.feature.get(i));
                     }
                 }
             }
-            
-            if (featuresOk!=featureLine.feature.size())
+
+            if (featuresOk != featureLine.feature.size() && !featureDataList.feature.isEmpty()) {
                 featureLineData.add(featureLine);
+            }
         }
-        
-        if (!featureLineData.isEmpty()){
-            disableFeatureTests(destFile, featureLineData, destFile.substring(destFile.lastIndexOf("\\")+1));
+
+        if (!featureLineData.isEmpty()) {
+            disableFeatureTests(destFile, featureLineData, destFile.substring(destFile.lastIndexOf("\\") + 1));
         }
     }
 
     public static void enableTests(String file, ArrayList<FileData> fileData, String fileName) throws FileNotFoundException, IOException {
-        
-        List<String> lines = Files.readAllLines(Paths.get(file),Charset.defaultCharset());
-        
-        if (fileData!=null && fileData.size()!=0) {
-            
-            for (int j=0;j<lines.size();j++){
-                if(lines.get(j).contains("/* @RunWith(Arquillian.class) */")){
-                    lines.set(j, lines.get(j).replaceAll("/* @RunWith(Arquillian.class) */","@RunWith(Arquillian.class)"));
+
+        List<String> lines = Files.readAllLines(Paths.get(file), Charset.defaultCharset());
+
+        if (fileData != null && fileData.size() != 0) {
+
+            for (int j = 0; j < lines.size(); j++) {
+                if (lines.get(j).contains("/* @RunWith(Arquillian.class) */")) {
+                    lines.set(j, lines.get(j).replaceAll("/* @RunWith(Arquillian.class) */", "@RunWith(Arquillian.class)"));
                 }
-                if(lines.get(j).contains("class") && lines.get(j).contains(fileName.replaceAll(".java","")) && lines.get(j-1).contains("@org.junit.Ignore")){
-                    lines.set(j-1, lines.get(j-1).replaceAll("@org.junit.Ignore",""));
+                if (lines.get(j).contains("class") && lines.get(j).contains(fileName.replaceAll(".java", "")) && lines.get(j - 1).contains("@org.junit.Ignore")) {
+                    lines.set(j - 1, lines.get(j - 1).replaceAll("@org.junit.Ignore", ""));
                     break;
                 }
             }
-            
-            for (FileData fd : fileData){
-                if(!lines.get(fd.lineNum-1).contains("@Test"))
-                    lines.set(fd.lineNum-1, lines.get(fd.lineNum-1) + " @Test");
+
+            for (FileData fd : fileData) {
+                if (!lines.get(fd.lineNum - 1).contains("@Test")) {
+                    lines.set(fd.lineNum - 1, lines.get(fd.lineNum - 1) + " @Test");
+                }
             }
-            
-            Files.write(Paths.get(file),lines,Charset.defaultCharset());
+
+            Files.write(Paths.get(file), lines, Charset.defaultCharset());
         }
     }
-    
+
     public static void disableFeatureTests(String file, ArrayList<FeatureData> featureData, String fileName) throws FileNotFoundException, IOException {
-        
-        List<String> lines = Files.readAllLines(Paths.get(file),Charset.defaultCharset());
-        
-        if (featureData!=null && featureData.size()!=0) {
-            
-            for (int j=0;j<lines.size();j++){
-                if(lines.get(j).contains("/* @RunWith(Arquillian.class) */")){
-                    lines.set(j, lines.get(j).replaceAll("/* @RunWith(Arquillian.class) */","@RunWith(Arquillian.class)"));
+
+        List<String> lines = Files.readAllLines(Paths.get(file), Charset.defaultCharset());
+
+        if (featureData != null && featureData.size() != 0) {
+
+            for (int j = 0; j < lines.size(); j++) {
+                if (lines.get(j).contains("/* @RunWith(Arquillian.class) */")) {
+                    lines.set(j, lines.get(j).replaceAll("/* @RunWith(Arquillian.class) */", "@RunWith(Arquillian.class)"));
                 }
-                if(lines.get(j).contains("class") && lines.get(j).contains(fileName.replaceAll(".java","")) && lines.get(j-1).contains("@org.junit.Ignore")){
-                    lines.set(j-1, lines.get(j-1).replaceAll("@org.junit.Ignore",""));
+                if (lines.get(j).contains("class") && lines.get(j).contains(fileName.replaceAll(".java", "")) && lines.get(j - 1).contains("@org.junit.Ignore")) {
+                    lines.set(j - 1, lines.get(j - 1).replaceAll("@org.junit.Ignore", ""));
                     break;
                 }
             }
-            
-            for (FeatureData fd : featureData){
-                lines.set(fd.lineNum-4, lines.get(fd.lineNum-4).replaceAll("@Test", ""));
-                lines.set(fd.lineNum-3, lines.get(fd.lineNum-3).replaceAll("@Test", ""));
-                lines.set(fd.lineNum-2, lines.get(fd.lineNum-2).replaceAll("@Test", ""));
-                lines.set(fd.lineNum-1, lines.get(fd.lineNum-1).replaceAll("@Test", "")); 
-                lines.set(fd.lineNum, lines.get(fd.lineNum).replaceAll("@Test", "")); 
-                lines.set(fd.lineNum+1, lines.get(fd.lineNum+1).replaceAll("@Test", "")); 
-                lines.set(fd.lineNum+2, lines.get(fd.lineNum+2).replaceAll("@Test", "")); 
+
+            for (FeatureData fd : featureData) {
+                lines.set(fd.lineNum - 4, lines.get(fd.lineNum - 4).replaceAll("@Test", ""));
+                lines.set(fd.lineNum - 3, lines.get(fd.lineNum - 3).replaceAll("@Test", ""));
+                lines.set(fd.lineNum - 2, lines.get(fd.lineNum - 2).replaceAll("@Test", ""));
+                lines.set(fd.lineNum - 1, lines.get(fd.lineNum - 1).replaceAll("@Test", ""));
+                lines.set(fd.lineNum, lines.get(fd.lineNum).replaceAll("@Test", ""));
+                lines.set(fd.lineNum + 1, lines.get(fd.lineNum + 1).replaceAll("@Test", ""));
+                lines.set(fd.lineNum + 2, lines.get(fd.lineNum + 2).replaceAll("@Test", ""));
             }
-            
-            Files.write(Paths.get(file),lines,Charset.defaultCharset());
+
+            Files.write(Paths.get(file), lines, Charset.defaultCharset());
         }
     }
-    
+
     public static void disableTests(String file, String fileName) throws FileNotFoundException, IOException {
-        List<String> lines = Files.readAllLines(Paths.get(file),Charset.defaultCharset());
+        List<String> lines = Files.readAllLines(Paths.get(file), Charset.defaultCharset());
         boolean testExist = false;
-        
-        int i=0;    
-        for (String line : lines){
-            if (line.contains("@Test")){
-                testExist=true;
+
+        int i = 0;
+        for (String line : lines) {
+            if (line.contains("@Test")) {
+                testExist = true;
             }
-            line=line.replaceAll("@Test","");
+            line = line.replaceAll("@Test", "");
             lines.set(i, line);
             i++;
         }
-        
-        
+
         boolean ignoreExists = false;
-        for (int j=0;j<lines.size();j++){
+        for (int j = 0; j < lines.size(); j++) {
             if (lines.get(j).contains("@Ignore")) {
                 ignoreExists = true;
             }
-            if(lines.get(j).contains("@RunWith(Arquillian.class)")){
+            if (lines.get(j).contains("@RunWith(Arquillian.class)")) {
                 lines.set(j, "/* " + lines.get(j) + " */");
             }
-            if (testExist) {    
-                if(!ignoreExists && lines.get(j).contains(" class") && lines.get(j).contains(fileName.replaceAll(".java",""))){
-                    lines.set(j-1, "@org.junit.Ignore" + lines.get(j-1));
+            if (testExist) {
+                if (!ignoreExists && lines.get(j).contains(" class") && lines.get(j).contains(fileName.replaceAll(".java", ""))) {
+                    lines.set(j - 1, "@org.junit.Ignore" + lines.get(j - 1));
                     break;
                 }
             }
         }
-        
-        Files.write(Paths.get(file),lines,Charset.defaultCharset());
+
+        Files.write(Paths.get(file), lines, Charset.defaultCharset());
     }
 }
 
@@ -696,7 +653,7 @@ class FileData {
         this.minVersion = minVersion;
         this.maxVersion = maxVersion;
     }
-    
+
     public FileData(String fileName, String packageName, String fileBaseDir, String minVersion, String maxVersion, int lineNum) {
         this.fileName = fileName;
         this.packageName = packageName;
@@ -717,14 +674,14 @@ class FeatureData {
     protected ArrayList<String> params;
     protected int lineNum;
 
-    public FeatureData(){    
+    public FeatureData() {
         feature = new ArrayList();
         minVersion = new ArrayList();
         maxVersion = new ArrayList();
-        resource =new ArrayList();
+        resource = new ArrayList();
         params = new ArrayList();
     }
-    
+
     public FeatureData(ArrayList<String> feature, ArrayList<String> minVersion, ArrayList<String> maxVersion, ArrayList<String> resource, ArrayList<String> params) {
         this.feature = feature;
         this.minVersion = minVersion;
@@ -732,7 +689,7 @@ class FeatureData {
         this.resource = resource;
         this.params = params;
     }
-    
+
     public FeatureData(ArrayList<String> feature, ArrayList<String> minVersion, ArrayList<String> maxVersion, ArrayList<String> resource, ArrayList<String> params, int lineNum) {
         this.feature = feature;
         this.minVersion = minVersion;

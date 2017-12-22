@@ -21,6 +21,9 @@
  */
 package org.jboss.eap.additional.testsuite.source.distribution;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
 
 /**
@@ -36,8 +39,65 @@ public class AdditionalTestsuiteDistributeSources {
      * args[2] : the server to distribute the sources to
      */
     public static void main(String[] args) throws IOException {
-        ProcessSources.AdditionalTestSuiteAnnotationProcessing(args[0],args[1],args[2],args[3],args[4],Boolean.parseBoolean(args[5]),args[6]);
-     //   ProcessSources.AdditionalTestSuiteAnnotationProcessing("/home/panos/RC/eap-additional-testsuite3","/home/panos/RC/eap-additional-testsuite3/modules/src/main/java","Wildfly","12.0.0.Alpha1-SNAPSHOT","vesrionOrder",Boolean.parseBoolean(null),"/home/panos/RC/eap-additional-testsuite-source-distribution/eap-additional-testsuite-source-distribution/features.txt");
+        String featureListFile = args[6];
+        FeatureData featureDataList = new FeatureData();
+        if (featureListFile != null) {
+            File featureList = new File(featureListFile);
+            
+            if (featureList.exists()) {
+                try {
+                    BufferedReader in = new BufferedReader(
+                            new FileReader(featureListFile));
+                    String str;
+
+                    while ((str = in.readLine()) != null) {
+                        String[] ar = str.split(",");
+
+                        if (ar.length == 1) {
+                            featureDataList.feature.add(ar[0].trim());
+                            featureDataList.minVersion.add(null);
+                            featureDataList.maxVersion.add(null);
+                            featureDataList.resource.add(null);
+                            featureDataList.params.add(null);
+                        } else if (ar.length == 2) {
+                            featureDataList.feature.add(ar[0].trim());
+                            featureDataList.minVersion.add(ar[1].trim());
+                            featureDataList.maxVersion.add(null);
+                            featureDataList.resource.add(null);
+                            featureDataList.params.add(null);
+                        } else if (ar.length == 3) {
+                            featureDataList.feature.add(ar[0].trim());
+                            featureDataList.minVersion.add(ar[1].trim());
+                            featureDataList.maxVersion.add(ar[2].trim());
+                            featureDataList.resource.add(null);
+                            featureDataList.params.add(null);
+                        } else if (ar.length == 4) {
+                            featureDataList.feature.add(ar[0].trim());
+                            featureDataList.minVersion.add(ar[1].trim());
+                            featureDataList.maxVersion.add(ar[2].trim());
+                            featureDataList.resource.add(ar[3].trim());
+                            featureDataList.params.add(null);
+                        } else if (ar.length > 4) {
+                            featureDataList.feature.add(ar[0].trim());
+                            featureDataList.minVersion.add(ar[1].trim());
+                            featureDataList.maxVersion.add(ar[2].trim());
+                            featureDataList.resource.add(ar[3].trim());
+                            String parameters = "";
+                            for (int i = 4; i < ar.length; i++) {
+                                parameters = parameters + ar[i].trim() + ",";
+                            }
+                            featureDataList.params.add(parameters);
+                        }
+                    }
+                    in.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+        
+        ProcessSources.AdditionalTestSuiteAnnotationProcessing(args[0],args[1],args[2],args[3],args[4],Boolean.parseBoolean(args[5]),featureDataList);
+    //    ProcessSources.AdditionalTestSuiteAnnotationProcessing("/home/panos/RC/eap-additional-testsuite3","/home/panos/RC/eap-additional-testsuite3/modules/src/main/java","Wildfly","12.0.0.Alpha1-SNAPSHOT","vesrionOrder",Boolean.parseBoolean(null),featureDataList);
     }
     
 }
