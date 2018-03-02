@@ -138,7 +138,7 @@ public class ProcessSources {
         }
     }
 
-    public static ArrayList<FileData> checkFileForAnnotation(String file, String annotationName, String server) throws ClassNotFoundException {
+    private static ArrayList<FileData> checkFileForAnnotation(String file, String annotationName, String server) throws ClassNotFoundException {
         String[] destinations = null;
         String annotationLine = null;
         ArrayList<FileData> result = new ArrayList<FileData>();
@@ -188,7 +188,7 @@ public class ProcessSources {
         return result;
     }
 
-    public static ArrayList<FileData> checkFileForAnnotations(String file, String annotationName, String server) throws ClassNotFoundException {
+    private static ArrayList<FileData> checkFileForAnnotations(String file, String annotationName, String server) throws ClassNotFoundException {
         String[] destinations = null;
         String annotationLine = null;
         ArrayList<FileData> result = new ArrayList<FileData>();
@@ -239,7 +239,7 @@ public class ProcessSources {
         return result;
     }
 
-    public static ArrayList<FeatureData> checkFileForFeatures(String file, String annotationName) throws ClassNotFoundException {
+    private static ArrayList<FeatureData> checkFileForFeatures(String file, String annotationName) throws ClassNotFoundException {
         String annotationLine;
         ArrayList<FeatureData> result = new ArrayList<>();
         File f = new File(file);
@@ -700,3 +700,4 @@ class FeatureData {
     }
 
 }
+

@@ -25,6 +25,8 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
 
 /**
  *
@@ -39,7 +41,7 @@ public class AdditionalTestsuiteDistributeSources {
      * args[2] : the server to distribute the sources to
      */
     public static void main(String[] args) throws IOException {
-        String featureListFile = args[6];
+        String featureListFile = null; //args[6];
         FeatureData featureDataList = new FeatureData();
         if (featureListFile != null) {
             File featureList = new File(featureListFile);
@@ -96,8 +98,52 @@ public class AdditionalTestsuiteDistributeSources {
             }
         }
         
-        ProcessSources.AdditionalTestSuiteAnnotationProcessing(args[0],args[1],args[2],args[3],args[4],Boolean.parseBoolean(args[5]),featureDataList);
-    //    ProcessSources.AdditionalTestSuiteAnnotationProcessing("/home/panos/RC/eap-additional-testsuite3","/home/panos/RC/eap-additional-testsuite3/modules/src/main/java","Wildfly","12.0.0.Alpha1-SNAPSHOT","vesrionOrder",Boolean.parseBoolean(null),featureDataList);
+        
+        String pmFeatureListFile = "/home/panos/pm-test/.pm/features.txt"; // args[7];
+                    
+        HashMap<String,PMFeatureData> pmFeatureDataList = new HashMap<>();
+        if (pmFeatureDataList != null) {
+        File pmFeatureList = new File(pmFeatureListFile);
+
+            if (pmFeatureList.exists()) {
+                try {
+                    BufferedReader in = new BufferedReader(
+                        new FileReader(pmFeatureListFile));
+                    String str;
+
+                    PMFeatureData pmFeatureData = null;
+                    while ((str = in.readLine()) != null) {
+                        if (str.contains("config name : ")) {
+                            if (pmFeatureData!=null)
+                                pmFeatureDataList.put(pmFeatureData.config, pmFeatureData);
+                            
+                            str = str.replaceAll("config name : ", "");
+                            pmFeatureData =  new PMFeatureData();
+                            pmFeatureData.config = str;
+                        }
+                        
+                        if (str.contains("feature id : ")) {
+                            str = str.replaceAll("feature id : ", "");
+                            pmFeatureData.feature.add(str);
+                        }
+                        
+                        if (str.contains("version : ")) {
+                            str = str.replaceAll("version : ", "");
+                            pmFeatureData.version.add(str);
+                        }
+
+                    }
+
+
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+        
+    //    ProcessSources.AdditionalTestSuiteAnnotationProcessing(args[0],args[1],args[2],args[3],args[4],Boolean.parseBoolean(args[5]),featureDataList,pmFeatureDataList);
+        ProcessSourcesEatPm.EatPmAnnotationProcessing("/home/panos/RC/EAT/eap-additional-testsuite","/home/panos/RC/EAT/eap-additional-testsuite/modules/src/main/java",pmFeatureDataList);
+        ProcessSources.AdditionalTestSuiteAnnotationProcessing("/home/panos/RC/EAT/eap-additional-testsuite","/home/panos/RC/EAT/eap-additional-testsuite/modules/src/main/java","Wildfly","12.0.0.Beta2-SNAPSHOT","vesrionOrder",Boolean.parseBoolean(null),featureDataList);
     }
     
 }
