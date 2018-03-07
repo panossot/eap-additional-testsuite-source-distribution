@@ -41,7 +41,8 @@ public class AdditionalTestsuiteDistributeSources {
      * args[2] : the server to distribute the sources to
      */
     public static void main(String[] args) throws IOException {
-        String featureListFile = null; //args[6];
+        ArrayList<String> excludedFiles = new ArrayList<>();
+        String featureListFile = args[6]; //null; //
         FeatureData featureDataList = new FeatureData();
         if (featureListFile != null) {
             File featureList = new File(featureListFile);
@@ -99,11 +100,11 @@ public class AdditionalTestsuiteDistributeSources {
         }
         
         
-        String pmFeatureListFile = "/home/panos/pm-test/.pm/features.txt"; // args[7];
+        String pmFeatureListFile = args[7];//"/home/panos/pm-test/.pm/features.txt"; // 
                     
         HashMap<String,PMFeatureData> pmFeatureDataList = new HashMap<>();
-        if (pmFeatureDataList != null) {
-        File pmFeatureList = new File(pmFeatureListFile);
+        if (pmFeatureListFile != null) {
+            File pmFeatureList = new File(pmFeatureListFile);
 
             if (pmFeatureList.exists()) {
                 try {
@@ -141,9 +142,10 @@ public class AdditionalTestsuiteDistributeSources {
             }
         }
         
-    //    ProcessSources.AdditionalTestSuiteAnnotationProcessing(args[0],args[1],args[2],args[3],args[4],Boolean.parseBoolean(args[5]),featureDataList,pmFeatureDataList);
-        ProcessSourcesEatPm.EatPmAnnotationProcessing("/home/panos/RC/EAT/eap-additional-testsuite","/home/panos/RC/EAT/eap-additional-testsuite/modules/src/main/java",pmFeatureDataList);
-        ProcessSources.AdditionalTestSuiteAnnotationProcessing("/home/panos/RC/EAT/eap-additional-testsuite","/home/panos/RC/EAT/eap-additional-testsuite/modules/src/main/java","Wildfly","12.0.0.Beta2-SNAPSHOT","vesrionOrder",Boolean.parseBoolean(null),featureDataList);
+        ProcessSourcesEatPm.EatPmAnnotationProcessing(args[0],args[1],pmFeatureDataList,excludedFiles);
+      //  ProcessSourcesEatPm.EatPmAnnotationProcessing("/home/panos/RC/EAT/eap-additional-testsuite","/home/panos/RC/EAT/eap-additional-testsuite/modules/src/main/java",pmFeatureDataList,excludedFiles);
+        ProcessSources.AdditionalTestSuiteAnnotationProcessing(args[0],args[1],args[2],args[3],args[4],Boolean.parseBoolean(args[5]),featureDataList,excludedFiles);
+      //  ProcessSources.AdditionalTestSuiteAnnotationProcessing("/home/panos/RC/EAT/eap-additional-testsuite","/home/panos/RC/EAT/eap-additional-testsuite/modules/src/main/java","Wildfly","12.0.0.Beta2-SNAPSHOT","vesrionOrder",Boolean.parseBoolean(null),featureDataList,excludedFiles);
     }
     
 }

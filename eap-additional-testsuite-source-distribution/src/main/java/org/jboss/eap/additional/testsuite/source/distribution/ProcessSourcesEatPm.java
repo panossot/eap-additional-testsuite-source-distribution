@@ -46,9 +46,9 @@ import java.util.List;
  */
 public class ProcessSourcesEatPm {
     
-    String versionOrder = "Alpha1,Alpha2,Beat1,Beta2,CR1,CR2,CR3,GA,Final";
+    static String versionOrder = "Alpha1,Alpha2,Beat1,Beta2,CR1,CR2,CR3,GA,Final";
 
-    public static void EatPmAnnotationProcessing(String basedir, String sourcePath, HashMap<String,PMFeatureData> pmFeatureDataList) {
+    public static void EatPmAnnotationProcessing(String basedir, String sourcePath, HashMap<String,PMFeatureData> pmFeatureDataList, ArrayList<String> excludedFiles) {
         File folder = new File(sourcePath);
         File[] listOfFiles = folder.listFiles();
 
@@ -59,12 +59,9 @@ public class ProcessSourcesEatPm {
         try {
             for (File file : listOfFiles) {
                 if (file.isDirectory()) {
-                    EatPmAnnotationProcessing(basedir, file.getAbsolutePath(), pmFeatureDataList);
+                    EatPmAnnotationProcessing(basedir, file.getAbsolutePath(), pmFeatureDataList, excludedFiles);
                 } else {
-                    boolean include = checkFileForAnnotation(file.getAbsolutePath(), "@EATDPM");
-                    if (!include) {
-                       
-                    }
+                    checkFileForAnnotation(file.getAbsolutePath(), "@EATDPM", pmFeatureDataList, excludedFiles);
                 }
             }
         } catch (Exception ex) {
@@ -72,9 +69,9 @@ public class ProcessSourcesEatPm {
         }
     }
 
-    private static boolean checkFileForAnnotation(String file, String annotationName) throws ClassNotFoundException {
+    private static boolean checkFileForAnnotation(String file, String annotationName, HashMap<String,PMFeatureData> pmFeatureDataList, ArrayList<String> excludedFiles) throws ClassNotFoundException {
         String annotationLine = null;
-        boolean result = false;
+        boolean result = true;
         File f = new File(file);
 
         BufferedReader reader = null;
@@ -84,22 +81,101 @@ public class ProcessSourcesEatPm {
             while ((line = reader.readLine()) != null) {
                 if (line.contains(annotationName)) {
                     annotationLine = line;
-                    int configIndex = annotationLine.indexOf("config=\"");
-                    String config = annotationLine.substring(configIndex+8, annotationLine.substring(configIndex+8).indexOf("\""));
+                    String isClassAnnotation = annotationLine.substring(annotationLine.lastIndexOf("isClassAnnotation=\"") + 19, annotationLine.lastIndexOf("isClassAnnotation=\"") + 19 + annotationLine.substring(annotationLine.lastIndexOf("isClassAnnotation=\"") + 19).indexOf("\""));
                     
-                    String[] features = annotationLine.substring(annotationLine.lastIndexOf("features={\"") + 11, annotationLine.lastIndexOf("features={\"") + 11 + annotationLine.substring(annotationLine.lastIndexOf("features={\"") + 11).indexOf("\"}")).split(",");
-                    String[] minVersions = null;
-                    if (annotationLine.lastIndexOf("minVersions={\"") != -1) {
-                        minVersions = annotationLine.substring(annotationLine.lastIndexOf("minVersions={\"") + 14, annotationLine.lastIndexOf("minVersions={\"") + 14 + annotationLine.substring(annotationLine.lastIndexOf("minVersions={\"") + 14).indexOf("\"}")).split(",");
+                    if(isClassAnnotation.contains("true")) {
+                        String config = annotationLine.substring(annotationLine.lastIndexOf("config=\"") + 8, annotationLine.lastIndexOf("config=\"") + 8 + annotationLine.substring(annotationLine.lastIndexOf("config=\"") + 8).indexOf("\""));
+
+                        if (pmFeatureDataList.containsKey(config)) {
+                            String[] features = annotationLine.substring(annotationLine.lastIndexOf("features={\"") + 11, annotationLine.lastIndexOf("features={\"") + 11 + annotationLine.substring(annotationLine.lastIndexOf("features={\"") + 11).indexOf("\"}")).split(",");
+                            
+                            String[] minVersions = null;
+                            if (annotationLine.lastIndexOf("minVersions={\"") != -1) {
+                                minVersions = annotationLine.substring(annotationLine.lastIndexOf("minVersions={\"") + 14, annotationLine.lastIndexOf("minVersions={\"") + 14 + annotationLine.substring(annotationLine.lastIndexOf("minVersions={\"") + 14).indexOf("\"}")).split(",");
+                            }
+                            
+                            String[] maxVersions = null;
+                            if (annotationLine.lastIndexOf("maxVersions={\"") != -1) {
+                                maxVersions = annotationLine.substring(annotationLine.lastIndexOf("maxVersions={\"") + 14, annotationLine.lastIndexOf("maxVersions={\"") + 14 + annotationLine.substring(annotationLine.lastIndexOf("maxVersions={\"") + 14).indexOf("\"}")).split(",");
+                            }
+                            
+                            int index = 0;
+                            for(String feature : features) {
+                                if(pmFeatureDataList.get(config).feature.contains(feature)) {
+                                    String version = pmFeatureDataList.get(config).version.get(pmFeatureDataList.get(config).feature.indexOf(feature));
+                                    String minVersion = minVersions[index];
+                                    String maxVersion = maxVersions[index];
+                                    
+                                    if (minVersion != null) {
+                                        String[] versionRelease = version.split("-");
+                                        int verRelease1 = 0;
+                                        String[] verPart = versionRelease[0].split("\\.");
+                                        if (verPart.length > 2) {
+                                            verRelease1 = Integer.parseInt(verPart[0] + verPart[1] + verPart[2]);
+                                        }
+                                        String[] subVersions = minVersion.split("-");
+                                        String[] verPart2 = subVersions[0].split("\\.");
+                                        int verRelease2 = 0;                                                                   
+                                        if (verPart2.length > 2) {
+                                            verRelease2 = Integer.parseInt(verPart2[0] + verPart2[1] + verPart2[2]);
+                                        }
+                                        
+                                        if (verRelease1 == verRelease2 && verPart.length > 3 && verPart2.length > 3){
+                                            if (verPart[3]!=null && verPart2[3]!=null && versionOrder.indexOf(verPart[3])!=-1 && versionOrder.indexOf(verPart2[3])!=-1) {
+                                                if(versionOrder.indexOf(verPart[3]) > versionOrder.indexOf(verPart2[3]))
+                                                    verRelease2--;
+                                                else if(versionOrder.indexOf(verPart[3]) < versionOrder.indexOf(verPart2[3]))
+                                                    verRelease2++;
+                                            }
+                                        }
+
+                                        int verRelease3 = Integer.MAX_VALUE;
+
+                                        if (maxVersion != null) {
+                                            String[] subVersionsMax = maxVersion.split("-");
+                                            verPart2 = subVersionsMax[0].split("\\.");
+
+                                            if (verPart2.length > 2) {
+                                                verRelease3 = Integer.parseInt(verPart2[0] + verPart2[1] + verPart2[2]);
+                                            }
+                                            
+                                            if (verRelease1 == verRelease3 && verPart.length > 3 && verPart2.length > 3){
+                                            if (verPart[3]!=null && verPart2[3]!=null && versionOrder.indexOf(verPart[3])!=-1 && versionOrder.indexOf(verPart2[3])!=-1) {
+                                                if(versionOrder.indexOf(verPart[3]) > versionOrder.indexOf(verPart2[3]))
+                                                    verRelease3--;
+                                                else if(versionOrder.indexOf(verPart[3]) < versionOrder.indexOf(verPart2[3]))
+                                                    verRelease3++;
+                                            }
+                                        }
+                                        }
+                                        
+                                        if((verRelease1 >= verRelease2) && (verRelease1 <= verRelease3)) {
+                                            result = true;
+                                        }else {
+                                            result = false;
+                                            break;
+                                        }
+                                    }else
+                                        result = true;
+                                    
+                                    
+                                }else {
+                                    result = false;
+                                    break;
+                                }
+                                
+                                index++;
+                            }
+
+                        }
+                        break;
                     }
-                    String[] maxVersions = null;
-                    if (annotationLine.lastIndexOf("maxVersions={\"") != -1) {
-                        maxVersions = annotationLine.substring(annotationLine.lastIndexOf("maxVersions={\"") + 14, annotationLine.lastIndexOf("maxVersions={\"") + 14 + annotationLine.substring(annotationLine.lastIndexOf("maxVersions={\"") + 14).indexOf("\"}")).split(",");
-                    }
-                    
-                    break;
                 }
             }
+            
+            if(!result)
+                excludedFiles.add(file);
+                
         } catch (Exception ex) {
             ex.printStackTrace();
         } finally {

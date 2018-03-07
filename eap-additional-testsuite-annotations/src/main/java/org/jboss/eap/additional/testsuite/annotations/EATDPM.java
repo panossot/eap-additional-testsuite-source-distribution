@@ -35,4 +35,5 @@ public @interface EATDPM {
     String[] minVersions() default "";
     String[] maxVersions() default "";
     String[] excludeDependencies() default "";
+    String isClassAnnotation() default "";
 }

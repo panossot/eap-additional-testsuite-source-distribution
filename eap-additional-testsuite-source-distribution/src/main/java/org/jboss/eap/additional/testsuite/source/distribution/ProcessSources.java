@@ -45,7 +45,7 @@ import java.util.List;
  */
 public class ProcessSources {
 
-    public static void AdditionalTestSuiteAnnotationProcessing(String basedir, String sourcePath, String server, String version, String versionOrderDir, boolean disableAllTests, FeatureData featureDataList) {
+    public static void AdditionalTestSuiteAnnotationProcessing(String basedir, String sourcePath, String server, String version, String versionOrderDir, boolean disableAllTests, FeatureData featureDataList, ArrayList<String> excludedFiles) {
         File folder = new File(sourcePath);
         File[] listOfFiles = folder.listFiles();
 
@@ -56,8 +56,8 @@ public class ProcessSources {
         try {
             for (File file : listOfFiles) {
                 if (file.isDirectory()) {
-                    AdditionalTestSuiteAnnotationProcessing(basedir, file.getAbsolutePath(), server, version, versionOrderDir, disableAllTests, featureDataList);
-                } else {
+                    AdditionalTestSuiteAnnotationProcessing(basedir, file.getAbsolutePath(), server, version, versionOrderDir, disableAllTests, featureDataList, excludedFiles);
+                } else if(!excludedFiles.contains(file.getAbsolutePath())) {
                     ArrayList<FileData> output = checkFileForAnnotation(file.getAbsolutePath(), "@EapAdditionalTestsuite", server);
                     for (FileData dest : output) {
                         if (dest.minVersion != null) {
