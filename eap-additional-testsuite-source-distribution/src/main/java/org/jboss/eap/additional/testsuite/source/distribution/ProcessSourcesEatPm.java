@@ -79,6 +79,8 @@ public class ProcessSourcesEatPm {
             reader = new BufferedReader(new FileReader(file));
             String line;
             while ((line = reader.readLine()) != null) {
+                if (line.contains(" class "))
+                    break;
                 if (line.contains(annotationName)) {
                     annotationLine = line;
                     String isClassAnnotation = annotationLine.substring(annotationLine.lastIndexOf("isClassAnnotation=\"") + 19, annotationLine.lastIndexOf("isClassAnnotation=\"") + 19 + annotationLine.substring(annotationLine.lastIndexOf("isClassAnnotation=\"") + 19).indexOf("\""));
