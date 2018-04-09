@@ -172,6 +172,8 @@ public class ProcessSourcesEatPm {
                         }
                     }
                 }
+                if (result)
+                    break;
             }
             
             if(!result)
