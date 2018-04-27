@@ -21,24 +21,15 @@
  */
 package org.jboss.eap.additional.testsuite.source.distribution;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.nio.charset.Charset;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import org.apache.commons.io.FileUtils;
 
 /**
  *
@@ -78,9 +69,8 @@ public class ProcessSourcesEatPm {
         try {
             reader = new BufferedReader(new FileReader(file));
             String line;
-            while ((line = reader.readLine()) != null) {
-                if (line.contains(" class "))
-                    break;
+            int lineNum=0;
+            while ((line = reader.readLine()) != null && !excludedFiles.contains(file)) {
                 if (line.contains(annotationName)) {
                     annotationLine = line;
                     String isClassAnnotation = annotationLine.substring(annotationLine.lastIndexOf("isClassAnnotation=\"") + 19, annotationLine.lastIndexOf("isClassAnnotation=\"") + 19 + annotationLine.substring(annotationLine.lastIndexOf("isClassAnnotation=\"") + 19).indexOf("\""));
@@ -170,11 +160,108 @@ public class ProcessSourcesEatPm {
                             }
 
                         }
+                        
+                        if (result)
+                           break;
+                        
+                    }else {
+                        boolean methodResult = true;
+                        String config = annotationLine.substring(annotationLine.lastIndexOf("config=\"") + 8, annotationLine.lastIndexOf("config=\"") + 8 + annotationLine.substring(annotationLine.lastIndexOf("config=\"") + 8).indexOf("\""));
+                        
+                        if (pmFeatureDataList.containsKey(config)) {
+                            String[] features = annotationLine.substring(annotationLine.lastIndexOf("features={\"") + 11, annotationLine.lastIndexOf("features={\"") + 11 + annotationLine.substring(annotationLine.lastIndexOf("features={\"") + 11).indexOf("\"}")).split(",");
+                            
+                            String[] minVersions = null;
+                            if (annotationLine.lastIndexOf("minVersions={\"") != -1) {
+                                minVersions = annotationLine.substring(annotationLine.lastIndexOf("minVersions={\"") + 14, annotationLine.lastIndexOf("minVersions={\"") + 14 + annotationLine.substring(annotationLine.lastIndexOf("minVersions={\"") + 14).indexOf("\"}")).split(",");
+                            }
+                            
+                            String[] maxVersions = null;
+                            if (annotationLine.lastIndexOf("maxVersions={\"") != -1) {
+                                maxVersions = annotationLine.substring(annotationLine.lastIndexOf("maxVersions={\"") + 14, annotationLine.lastIndexOf("maxVersions={\"") + 14 + annotationLine.substring(annotationLine.lastIndexOf("maxVersions={\"") + 14).indexOf("\"}")).split(",");
+                            }
+                            
+                            int index = 0;
+                            for(String feature : features) {
+                                if(pmFeatureDataList.get(config).feature.contains(feature)) {
+                                    String version = pmFeatureDataList.get(config).version.get(pmFeatureDataList.get(config).feature.indexOf(feature));
+                                    String minVersion = minVersions[index];
+                                    String maxVersion = maxVersions[index];
+                                    
+                                    if (minVersion != null) {
+                                        String[] versionRelease = version.split("-");
+                                        int verRelease1 = 0;
+                                        String[] verPart = versionRelease[0].split("\\.");
+                                        if (verPart.length > 2) {
+                                            verRelease1 = Integer.parseInt(verPart[0] + verPart[1] + verPart[2]);
+                                        }
+                                        String[] subVersions = minVersion.split("-");
+                                        String[] verPart2 = subVersions[0].split("\\.");
+                                        int verRelease2 = 0;                                                                   
+                                        if (verPart2.length > 2) {
+                                            verRelease2 = Integer.parseInt(verPart2[0] + verPart2[1] + verPart2[2]);
+                                        }
+                                        
+                                        if (verRelease1 == verRelease2 && verPart.length > 3 && verPart2.length > 3){
+                                            if (verPart[3]!=null && verPart2[3]!=null && versionOrder.indexOf(verPart[3])!=-1 && versionOrder.indexOf(verPart2[3])!=-1) {
+                                                if(versionOrder.indexOf(verPart[3]) > versionOrder.indexOf(verPart2[3]))
+                                                    verRelease2--;
+                                                else if(versionOrder.indexOf(verPart[3]) < versionOrder.indexOf(verPart2[3]))
+                                                    verRelease2++;
+                                            }
+                                        }
+
+                                        int verRelease3 = Integer.MAX_VALUE;
+
+                                        if (maxVersion != null) {
+                                            String[] subVersionsMax = maxVersion.split("-");
+                                            verPart2 = subVersionsMax[0].split("\\.");
+
+                                            if (verPart2.length > 2) {
+                                                verRelease3 = Integer.parseInt(verPart2[0] + verPart2[1] + verPart2[2]);
+                                            }
+                                            
+                                            if (verRelease1 == verRelease3 && verPart.length > 3 && verPart2.length > 3){
+                                                if (verPart[3]!=null && verPart2[3]!=null && versionOrder.indexOf(verPart[3])!=-1 && versionOrder.indexOf(verPart2[3])!=-1) {
+                                                    if(versionOrder.indexOf(verPart[3]) > versionOrder.indexOf(verPart2[3]))
+                                                        verRelease3--;
+                                                    else if(versionOrder.indexOf(verPart[3]) < versionOrder.indexOf(verPart2[3]))
+                                                        verRelease3++;
+                                                }
+                                            }
+                                        }
+                                        
+                                        if((verRelease1 >= verRelease2) && (verRelease1 <= verRelease3)) {
+                                            methodResult = true;
+                                        }else {
+                                            methodResult = false;
+                                            break;
+                                        }
+                                    }else
+                                        methodResult = true;
+                                    
+                                    
+                                }else {
+                                    methodResult = false;
+                                    break;
+                                }
+                                
+                                index++;
+                            }
+
+                        }
+                        
+                        if(!methodResult) {
+                            reader = deleteMethodEATDPM(lineNum,file);
+                            
+                            for(int i=0; i<lineNum; i++){
+                                reader.readLine();
+                            }
+                        }
                     }
-                    if (result)
-                    break;
+
                 }
-                
+                lineNum++;
             }
             
             if(!result)
@@ -193,6 +280,42 @@ public class ProcessSourcesEatPm {
         }
 
         return result;
+    }
+    
+    private static BufferedReader deleteMethodEATDPM(int lineNum, String file) throws IOException{
+        List<String> lines = FileUtils.readLines(new File(file), "utf-8");
+        
+        while(lines.get(lineNum).compareTo("")!=0){
+            lineNum--;
+        }
+        if(lines.get(lineNum).compareTo("")==0) {
+            int up=0;
+            int down=0;
+            lineNum++;
+            
+            while ((lines!=null && lines.size()>lineNum-1 && lines.get(lineNum)!=null && lines.get(lineNum).compareTo("")!=0) || up==0 || up!=down) {
+                System.out.println(lineNum + " " + lines.get(lineNum).compareTo("") + " " + (up!=down));
+                String line = lines.get(lineNum);
+                while(line.contains("{")) {
+                    line = line.replaceFirst("\\{", "");
+                    up++;
+                }
+                while(line.contains("}")) {
+                    line = line.replaceFirst("\\}", "");
+                    down++;
+                }
+                lines.remove(lineNum);
+            }
+            
+            FileWriter writer = new FileWriter(file); 
+            for(String str: lines) {
+              writer.write(str + "\n");
+            }
+            writer.close();
+            
+        }
+        
+        return (new BufferedReader(new FileReader(file)));
     }
 
 }
