@@ -63,7 +63,9 @@ public class ProcessSourcesEatPm {
     private static boolean checkFileForAnnotation(String file, String annotationName, HashMap<String,PMFeatureData> pmFeatureDataList, ArrayList<String> excludedFiles) throws ClassNotFoundException {
         String annotationLine = null;
         boolean result = true;
+        boolean methodResult = true;
         File f = new File(file);
+        String[] excludeDependencies = null;
 
         BufferedReader reader = null;
         try {
@@ -71,6 +73,15 @@ public class ProcessSourcesEatPm {
             String line;
             int lineNum=0;
             while ((line = reader.readLine()) != null && !excludedFiles.contains(file)) {
+                if(!methodResult && !line.contains(annotationName)) {
+                    deleteMethodEATDPM(lineNum,file,excludeDependencies);
+                            
+                    reader = new BufferedReader(new FileReader(file));
+                    lineNum=0;
+                    methodResult=true;
+                    continue;
+                }
+                
                 if (line.contains(annotationName)) {
                     annotationLine = line;
                     String isClassAnnotation = annotationLine.substring(annotationLine.lastIndexOf("isClassAnnotation=\"") + 19, annotationLine.lastIndexOf("isClassAnnotation=\"") + 19 + annotationLine.substring(annotationLine.lastIndexOf("isClassAnnotation=\"") + 19).indexOf("\""));
@@ -165,7 +176,7 @@ public class ProcessSourcesEatPm {
                            break;
                         
                     }else {
-                        boolean methodResult = true;
+                        methodResult = true;
                         String config = annotationLine.substring(annotationLine.lastIndexOf("config=\"") + 8, annotationLine.lastIndexOf("config=\"") + 8 + annotationLine.substring(annotationLine.lastIndexOf("config=\"") + 8).indexOf("\""));
                         
                         if (pmFeatureDataList.containsKey(config)) {
@@ -179,6 +190,11 @@ public class ProcessSourcesEatPm {
                             String[] maxVersions = null;
                             if (annotationLine.lastIndexOf("maxVersions={\"") != -1) {
                                 maxVersions = annotationLine.substring(annotationLine.lastIndexOf("maxVersions={\"") + 14, annotationLine.lastIndexOf("maxVersions={\"") + 14 + annotationLine.substring(annotationLine.lastIndexOf("maxVersions={\"") + 14).indexOf("\"}")).split(",");
+                            }
+                            
+                            excludeDependencies = null;
+                            if (annotationLine.lastIndexOf("excludeDependencies={\"") != -1) {
+                                excludeDependencies = annotationLine.substring(annotationLine.lastIndexOf("excludeDependencies={\"") + 22, annotationLine.lastIndexOf("excludeDependencies={\"") + 22 + annotationLine.substring(annotationLine.lastIndexOf("excludeDependencies={\"") + 22).indexOf("\"}")).split(",");
                             }
                             
                             int index = 0;
@@ -251,16 +267,11 @@ public class ProcessSourcesEatPm {
 
                         }
                         
-                        if(!methodResult) {
-                            reader = deleteMethodEATDPM(lineNum,file);
-                            
-                            for(int i=0; i<lineNum; i++){
-                                reader.readLine();
-                            }
-                        }
+                        
                     }
 
                 }
+                
                 lineNum++;
             }
             
@@ -282,8 +293,22 @@ public class ProcessSourcesEatPm {
         return result;
     }
     
-    private static BufferedReader deleteMethodEATDPM(int lineNum, String file) throws IOException{
+    private static void deleteMethodEATDPM(int lineNum, String file, String[] excludeDependencies) throws IOException{
         List<String> lines = FileUtils.readLines(new File(file), "utf-8");
+        
+        if (excludeDependencies!=null) {
+            for(String dep : excludeDependencies) {
+                int lineN = 0;
+                while(!lines.get(lineN).contains(dep)){
+                    lineN++;
+                }
+                
+                if (lines.get(lineN).contains(dep)){
+                    lines.remove(lineN);
+                    lineNum--;
+                }
+            }
+        }
         
         while(lines.get(lineNum).compareTo("")!=0){
             lineNum--;
@@ -293,8 +318,7 @@ public class ProcessSourcesEatPm {
             int down=0;
             lineNum++;
             
-            while ((lines!=null && lines.size()>lineNum-1 && lines.get(lineNum)!=null && lines.get(lineNum).compareTo("")!=0) || up==0 || up!=down) {
-                System.out.println(lineNum + " " + lines.get(lineNum).compareTo("") + " " + (up!=down));
+            while ((lines!=null && lines.size()>lineNum-1 && lines.get(lineNum)!=null && lines.get(lineNum).trim().compareTo("")!=0) || up==0 || up!=down) {
                 String line = lines.get(lineNum);
                 while(line.contains("{")) {
                     line = line.replaceFirst("\\{", "");
@@ -314,8 +338,6 @@ public class ProcessSourcesEatPm {
             writer.close();
             
         }
-        
-        return (new BufferedReader(new FileReader(file)));
     }
 
 }
