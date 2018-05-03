@@ -402,7 +402,7 @@ public class ProcessSources {
                                         for (String ver : versions) {
                                             if (lastPart.contains(ver) || lastPart.compareTo(ver) == 0) {
                                                 System.out.println(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName);
-                                                enableTests(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName, output, dest.fileName);
+                                                enableTests(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName, dest, dest.fileName);
                                             }
                                         }
                                     }
@@ -412,11 +412,11 @@ public class ProcessSources {
                     }
                 } else if (verRelease1 >= verRelease2 && (verRelease3 == 0 || verRelease1 <= verRelease3)) {
                     System.out.println(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName);
-                    enableTests(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName, output, dest.fileName);
+                    enableTests(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName, dest, dest.fileName);
                 }
             } else {
                 System.out.println(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName);
-                enableTests(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName, output, dest.fileName);
+                enableTests(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName, dest, dest.fileName);
             }
         }
 
@@ -547,11 +547,11 @@ public class ProcessSources {
         }
     }
 
-    public static void enableTests(String file, ArrayList<FileData> fileData, String fileName) throws FileNotFoundException, IOException {
+    public static void enableTests(String file, FileData fileData, String fileName) throws FileNotFoundException, IOException {
 
         List<String> lines = Files.readAllLines(Paths.get(file), Charset.defaultCharset());
 
-        if (fileData != null && fileData.size() != 0) {
+        if (fileData != null) {
 
             for (int j = 0; j < lines.size(); j++) {
                 if (lines.get(j).contains("/* @RunWith(Arquillian.class) */")) {
@@ -563,10 +563,8 @@ public class ProcessSources {
                 }
             }
 
-            for (FileData fd : fileData) {
-                if (!lines.get(fd.lineNum - 1).contains("@Test")) {
-                    lines.set(fd.lineNum - 1, lines.get(fd.lineNum - 1) + " @Test");
-                }
+            if (!lines.get(fileData.lineNum - 1).contains("@Test")) {
+                lines.set(fileData.lineNum - 1, lines.get(fileData.lineNum - 1) + " @Test");
             }
 
             Files.write(Paths.get(file), lines, Charset.defaultCharset());
