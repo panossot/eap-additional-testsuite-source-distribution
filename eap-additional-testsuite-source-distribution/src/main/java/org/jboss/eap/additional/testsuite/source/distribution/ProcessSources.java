@@ -61,6 +61,7 @@ public class ProcessSources {
                     ArrayList<FileData> output = checkFileForAnnotation(file.getAbsolutePath(), "@EapAdditionalTestsuite", server);
                     for (FileData dest : output) {
                         if (dest.minVersion != null) {
+                            boolean isSnapshot = version.contains("SNAPSHOT");
                             String[] versionRelease = version.split("-");
                             int verRelease1 = 0;
                             String[] verPart = versionRelease[0].split("\\.");
@@ -97,7 +98,15 @@ public class ProcessSources {
                                                 String lastPart = versionNums[versionNums.length - 1];
                                                 if (!lastPart.matches("[0-9]+")) {
                                                     for (String ver : versions) {
-                                                        if (lastPart.contains(ver) || lastPart.compareTo(ver) == 0) {
+                                                        if (lastPart.contains(ver) && !subVersions[1].contains(ver)) {
+                                                            System.out.println(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName);
+                                                            copyWithStreams(file, new File(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName), false);
+                                                            if (disableAllTests) {
+                                                                disableTests(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName, dest.fileName);
+                                                            }
+                                                            String destFile = basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName;
+                                                            checkMethodInclusion(file, destFile, server, basedir, version, versionOrderDir, featureDataList);
+                                                        }else if (subVersions[1].contains(ver) && !isSnapshot) {
                                                             System.out.println(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName);
                                                             copyWithStreams(file, new File(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName), false);
                                                             if (disableAllTests) {
@@ -113,13 +122,15 @@ public class ProcessSources {
                                     }
                                 }
                             } else if (verRelease1 >= verRelease2 && (verRelease3 == 0 || verRelease1 <= verRelease3)) {
-                                System.out.println(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName);
-                                copyWithStreams(file, new File(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName), false);
-                                if (disableAllTests) {
-                                    disableTests(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName, dest.fileName);
+                                if (verRelease1!=verRelease2 || !isSnapshot) {
+                                    System.out.println(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName);
+                                    copyWithStreams(file, new File(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName), false);
+                                    if (disableAllTests) {
+                                        disableTests(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName, dest.fileName);
+                                    }
+                                    String destFile = basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName;
+                                    checkMethodInclusion(file, destFile, server, basedir, version, versionOrderDir, featureDataList);
                                 }
-                                String destFile = basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName;
-                                checkMethodInclusion(file, destFile, server, basedir, version, versionOrderDir, featureDataList);
                             }
                         } else {
                             System.out.println(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName);
@@ -364,6 +375,7 @@ public class ProcessSources {
         ArrayList<FileData> output = checkFileForAnnotations(file.getAbsolutePath(), "@ATTest", server);
         for (FileData dest : output) {
             if (dest.minVersion != null) {
+                boolean isSnapshot = version.contains("SNAPSHOT");
                 String[] versionRelease = version.split("-");
                 int verRelease1 = 0;
                 String[] verPart = versionRelease[0].split("\\.");
@@ -400,7 +412,10 @@ public class ProcessSources {
                                     String lastPart = versionNums[versionNums.length - 1];
                                     if (!lastPart.matches("[0-9]+")) {
                                         for (String ver : versions) {
-                                            if (lastPart.contains(ver) || lastPart.compareTo(ver) == 0) {
+                                            if (lastPart.contains(ver) && !subVersions[1].contains(ver)) {
+                                                System.out.println(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName);
+                                                enableTests(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName, dest, dest.fileName);
+                                            }else if (subVersions[1].contains(ver) && !isSnapshot) {
                                                 System.out.println(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName);
                                                 enableTests(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName, dest, dest.fileName);
                                             }
@@ -411,8 +426,10 @@ public class ProcessSources {
                         }
                     }
                 } else if (verRelease1 >= verRelease2 && (verRelease3 == 0 || verRelease1 <= verRelease3)) {
-                    System.out.println(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName);
-                    enableTests(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName, dest, dest.fileName);
+                    if (verRelease1!=verRelease2 || !isSnapshot) {
+                        System.out.println(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName);
+                        enableTests(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName, dest, dest.fileName);
+                    }
                 }
             } else {
                 System.out.println(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName);
