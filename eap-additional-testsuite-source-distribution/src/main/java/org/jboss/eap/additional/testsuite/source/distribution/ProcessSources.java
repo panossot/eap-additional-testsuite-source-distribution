@@ -45,7 +45,7 @@ import java.util.List;
  */
 public class ProcessSources {
 
-    public static void AdditionalTestSuiteAnnotationProcessing(String basedir, String sourcePath, String server, String version, String versionOrderDir, boolean disableAllTests, FeatureData featureDataList, ArrayList<String> excludedFiles) {
+    public static void AdditionalTestSuiteAnnotationProcessing(String basedir, String sourcePath, String server, String version, String versionOrderDir, boolean disableAllTests, FeatureData featureDataList, ArrayList<String> excludedFiles, String disableSnapshotVersions) {
         File folder = new File(sourcePath);
         File[] listOfFiles = folder.listFiles();
 
@@ -56,12 +56,14 @@ public class ProcessSources {
         try {
             for (File file : listOfFiles) {
                 if (file.isDirectory()) {
-                    AdditionalTestSuiteAnnotationProcessing(basedir, file.getAbsolutePath(), server, version, versionOrderDir, disableAllTests, featureDataList, excludedFiles);
+                    AdditionalTestSuiteAnnotationProcessing(basedir, file.getAbsolutePath(), server, version, versionOrderDir, disableAllTests, featureDataList, excludedFiles, disableSnapshotVersions);
                 } else if(!excludedFiles.contains(file.getAbsolutePath())) {
                     ArrayList<FileData> output = checkFileForAnnotation(file.getAbsolutePath(), "@EapAdditionalTestsuite", server);
                     for (FileData dest : output) {
                         if (dest.minVersion != null) {
-                            boolean isSnapshot = version.contains("SNAPSHOT");
+                            boolean isSnapshot = false;
+                            if(disableSnapshotVersions!=null && disableSnapshotVersions.contains("true"))
+                                isSnapshot = version.contains("SNAPSHOT");
                             String[] versionRelease = version.split("-");
                             int verRelease1 = 0;
                             String[] verPart = versionRelease[0].split("\\.");
@@ -105,7 +107,7 @@ public class ProcessSources {
                                                                 disableTests(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName, dest.fileName);
                                                             }
                                                             String destFile = basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName;
-                                                            checkMethodInclusion(file, destFile, server, basedir, version, versionOrderDir, featureDataList);
+                                                            checkMethodInclusion(file, destFile, server, basedir, version, versionOrderDir, featureDataList, disableSnapshotVersions);
                                                         }else if (subVersions[1].contains(ver) && !isSnapshot) {
                                                             System.out.println(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName);
                                                             copyWithStreams(file, new File(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName), false);
@@ -113,7 +115,7 @@ public class ProcessSources {
                                                                 disableTests(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName, dest.fileName);
                                                             }
                                                             String destFile = basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName;
-                                                            checkMethodInclusion(file, destFile, server, basedir, version, versionOrderDir, featureDataList);
+                                                            checkMethodInclusion(file, destFile, server, basedir, version, versionOrderDir, featureDataList, disableSnapshotVersions);
                                                         }
                                                     }
                                                 }
@@ -129,7 +131,7 @@ public class ProcessSources {
                                         disableTests(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName, dest.fileName);
                                     }
                                     String destFile = basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName;
-                                    checkMethodInclusion(file, destFile, server, basedir, version, versionOrderDir, featureDataList);
+                                    checkMethodInclusion(file, destFile, server, basedir, version, versionOrderDir, featureDataList, disableSnapshotVersions);
                                 }
                             }
                         } else {
@@ -139,7 +141,7 @@ public class ProcessSources {
                                 disableTests(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName, dest.fileName);
                             }
                             String destFile = basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName;
-                            checkMethodInclusion(file, destFile, server, basedir, version, versionOrderDir, featureDataList);
+                            checkMethodInclusion(file, destFile, server, basedir, version, versionOrderDir, featureDataList, disableSnapshotVersions);
                         }
                     }
                 }
@@ -370,12 +372,14 @@ public class ProcessSources {
         }
     }
 
-    private static void checkMethodInclusion(File file, String destFile, String server, String basedir, String version, String versionOrderDir, FeatureData featureDataList) throws ClassNotFoundException, IOException {
+    private static void checkMethodInclusion(File file, String destFile, String server, String basedir, String version, String versionOrderDir, FeatureData featureDataList, String disableSnapshotVersions) throws ClassNotFoundException, IOException {
 
         ArrayList<FileData> output = checkFileForAnnotations(file.getAbsolutePath(), "@ATTest", server);
         for (FileData dest : output) {
             if (dest.minVersion != null) {
-                boolean isSnapshot = version.contains("SNAPSHOT");
+                boolean isSnapshot = false;
+                if(disableSnapshotVersions!=null && disableSnapshotVersions.contains("true"))
+                    isSnapshot = version.contains("SNAPSHOT");
                 String[] versionRelease = version.split("-");
                 int verRelease1 = 0;
                 String[] verPart = versionRelease[0].split("\\.");
