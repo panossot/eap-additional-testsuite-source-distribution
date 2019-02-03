@@ -38,6 +38,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import org.apache.commons.io.IOUtils;
 
 /**
  *
@@ -45,7 +46,7 @@ import java.util.List;
  */
 public class ProcessSources {
 
-    public static void AdditionalTestSuiteAnnotationProcessing(String basedir, String sourcePath, String server, String version, String versionOrderDir, boolean disableAllTests, FeatureData featureDataList, ArrayList<String> excludedFiles, String disableSnapshotVersions) {
+    public static void AdditionalTestSuiteAnnotationProcessing(String basedir, String sourcePath, String server, String version, String versionOrderDir, boolean disableAllTests, FeatureData featureDataList, ArrayList<String> excludedFiles, String disableSnapshotVersions, String gitDir) {
         File folder = new File(sourcePath);
         File[] listOfFiles = folder.listFiles();
 
@@ -56,10 +57,23 @@ public class ProcessSources {
         try {
             for (File file : listOfFiles) {
                 if (file.isDirectory()) {
-                    AdditionalTestSuiteAnnotationProcessing(basedir, file.getAbsolutePath(), server, version, versionOrderDir, disableAllTests, featureDataList, excludedFiles, disableSnapshotVersions);
+                    AdditionalTestSuiteAnnotationProcessing(basedir, file.getAbsolutePath(), server, version, versionOrderDir, disableAllTests, featureDataList, excludedFiles, disableSnapshotVersions, gitDir);
                 } else if (!excludedFiles.contains(file.getAbsolutePath())) {
-                    ArrayList<FileData> output = checkFileForAnnotation(file.getAbsolutePath(), "@EapAdditionalTestsuite", server);
+                    ArrayList<FileData> output = checkFileForAnnotation(file.getAbsolutePath(), "@EapAdditionalTestsuite", server, gitDir);
                     for (FileData dest : output) {
+                        if(dest.commitExists!=null){
+                            if(dest.commitExists.equals("true")){
+                                System.out.println(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName);
+                                copyWithStreams(file, new File(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName), false);
+                                if (disableAllTests) {
+                                    disableTests(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName, dest.fileName);
+                                }
+                                String destFile = basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName;
+                                checkMethodInclusion(file, destFile, server, basedir, version, versionOrderDir, featureDataList, disableSnapshotVersions, gitDir);
+                            }
+                            continue;
+                        }
+                        
                         if (dest.minVersion != null) {
                             boolean isSnapshot = false;
                             if (disableSnapshotVersions != null && disableSnapshotVersions.contains("true")) {
@@ -126,9 +140,9 @@ public class ProcessSources {
                                                                         disableTests(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName, dest.fileName);
                                                                     }
                                                                     String destFile = basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName;
-                                                                    checkMethodInclusion(file, destFile, server, basedir, version, versionOrderDir, featureDataList, disableSnapshotVersions);
+                                                                    checkMethodInclusion(file, destFile, server, basedir, version, versionOrderDir, featureDataList, disableSnapshotVersions, gitDir);
                                                                 } else if (verRelease1 == verRelease3) {
-                                                                    procedure0(file, dest, server, basedir, version, versionOrderDir, verRelease1, verRelease3, subVersionsMax, versionRelease, featureDataList, disableSnapshotVersions, isSnapshot, disableAllTests);
+                                                                    procedure0(file, dest, server, basedir, version, versionOrderDir, verRelease1, verRelease3, subVersionsMax, versionRelease, featureDataList, disableSnapshotVersions, isSnapshot, disableAllTests, gitDir);
                                                                 }
                                                             }
                                                         }
@@ -142,9 +156,9 @@ public class ProcessSources {
                                                                 disableTests(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName, dest.fileName);
                                                             }
                                                             String destFile = basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName;
-                                                            checkMethodInclusion(file, destFile, server, basedir, version, versionOrderDir, featureDataList, disableSnapshotVersions);
+                                                            checkMethodInclusion(file, destFile, server, basedir, version, versionOrderDir, featureDataList, disableSnapshotVersions, gitDir);
                                                         } else if (verRelease1 == verRelease3) {
-                                                            procedure0(file, dest, server, basedir, version, versionOrderDir, verRelease1, verRelease3, subVersionsMax, versionRelease, featureDataList, disableSnapshotVersions, isSnapshot, disableAllTests);
+                                                            procedure0(file, dest, server, basedir, version, versionOrderDir, verRelease1, verRelease3, subVersionsMax, versionRelease, featureDataList, disableSnapshotVersions, isSnapshot, disableAllTests, gitDir);
                                                         }
                                                     }
                                                 }
@@ -163,10 +177,10 @@ public class ProcessSources {
                                                 disableTests(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName, dest.fileName);
                                             }
                                             String destFile = basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName;
-                                            checkMethodInclusion(file, destFile, server, basedir, version, versionOrderDir, featureDataList, disableSnapshotVersions);
+                                            checkMethodInclusion(file, destFile, server, basedir, version, versionOrderDir, featureDataList, disableSnapshotVersions, gitDir);
                                         }
                                     } else if (verRelease1 == verRelease3) {
-                                        procedure0(file, dest, server, basedir, version, versionOrderDir, verRelease1, verRelease3, subVersionsMax, versionRelease, featureDataList, disableSnapshotVersions, isSnapshot, disableAllTests);
+                                        procedure0(file, dest, server, basedir, version, versionOrderDir, verRelease1, verRelease3, subVersionsMax, versionRelease, featureDataList, disableSnapshotVersions, isSnapshot, disableAllTests, gitDir);
                                     }
                                 }
                             }
@@ -177,7 +191,7 @@ public class ProcessSources {
                                 disableTests(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName, dest.fileName);
                             }
                             String destFile = basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName;
-                            checkMethodInclusion(file, destFile, server, basedir, version, versionOrderDir, featureDataList, disableSnapshotVersions);
+                            checkMethodInclusion(file, destFile, server, basedir, version, versionOrderDir, featureDataList, disableSnapshotVersions, gitDir);
                         }
                     }
 
@@ -188,7 +202,7 @@ public class ProcessSources {
         }
     }
 
-    private static void procedure0(File file, FileData dest, String server, String basedir, String version, String versionOrderDir, int verRelease1, int verRelease3, String[] subVersionsMax, String[] versionRelease, FeatureData featureDataList, String disableSnapshotVersions, boolean isSnapshot, boolean disableAllTests) throws IOException, ClassNotFoundException {
+    private static void procedure0(File file, FileData dest, String server, String basedir, String version, String versionOrderDir, int verRelease1, int verRelease3, String[] subVersionsMax, String[] versionRelease, FeatureData featureDataList, String disableSnapshotVersions, boolean isSnapshot, boolean disableAllTests, String gitDir) throws IOException, ClassNotFoundException {
         if (verRelease1 == verRelease3) {
 
             String[] vf = new String[2];
@@ -223,7 +237,7 @@ public class ProcessSources {
                                             disableTests(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName, dest.fileName);
                                         }
                                         String destFile = basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName;
-                                        checkMethodInclusion(file, destFile, server, basedir, version, versionOrderDir, featureDataList, disableSnapshotVersions);
+                                        checkMethodInclusion(file, destFile, server, basedir, version, versionOrderDir, featureDataList, disableSnapshotVersions, gitDir);
                                     }
                                 }
                             }
@@ -238,14 +252,14 @@ public class ProcessSources {
                         disableTests(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName, dest.fileName);
                     }
                     String destFile = basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName;
-                    checkMethodInclusion(file, destFile, server, basedir, version, versionOrderDir, featureDataList, disableSnapshotVersions);
+                    checkMethodInclusion(file, destFile, server, basedir, version, versionOrderDir, featureDataList, disableSnapshotVersions, gitDir);
                 }
             }
         }
 
     }
 
-    private static ArrayList<FileData> checkFileForAnnotation(String file, String annotationName, String server) throws ClassNotFoundException {
+    private static ArrayList<FileData> checkFileForAnnotation(String file, String annotationName, String server, String gitDir) throws ClassNotFoundException {
         String[] destinations = null;
         String annotationLine = null;
         ArrayList<FileData> result = new ArrayList<FileData>();
@@ -265,15 +279,39 @@ public class ProcessSources {
                     destinations = annotationLine.split("\"");
                     for (String path : destinations) {
                         if (!path.contains(",") && path.contains("/" + server + "/")) {
-                            if (!path.contains("#") && !path.contains("*")) {
-                                result.add(new FileData(f.getName(), packageName.replaceAll("\\.", "/"), path, null, null));
+                            if (path.contains("@")){
+                                String[] commits = path.split("@")[1].split("-");
+                                String dir = gitDir;
+                                String distribute = null;
+                                
+                                for(String com : commits){
+                                    ArrayList<String> commands=new ArrayList<String>();
+                                    commands.add("bash");
+                                    commands.add("-c");
+                                    commands.add("cd " + dir + " ; git show --name-only " + com);
+                                    ProcessBuilder pb = new ProcessBuilder(commands);
+                                    Process p = pb.start();
+
+                                    while (p.isAlive());
+                                    String output = IOUtils.toString(p.getInputStream());
+                               //     System.out.println("+++++++ " + output);
+                                    p.destroy();
+                                    if(!output.contains("commit")){
+                                        distribute="false";
+                                        break;
+                                    }
+                                }
+                                String[] pathVersion = path.split("@");
+                                result.add(new FileData(f.getName(), packageName.replaceAll("\\.", "/"), pathVersion[0], null, null,distribute));
+                            } else if (!path.contains("#") && !path.contains("*")) {
+                                result.add(new FileData(f.getName(), packageName.replaceAll("\\.", "/"), path, null, null,null));
                             } else if (!path.contains("*")) {
                                 String[] pathVersion = path.split("#");
-                                result.add(new FileData(f.getName(), packageName.replaceAll("\\.", "/"), pathVersion[0], pathVersion[1], null));
+                                result.add(new FileData(f.getName(), packageName.replaceAll("\\.", "/"), pathVersion[0], pathVersion[1], null,null));
                             } else {
                                 String[] pathVersion = path.split("\\*");
                                 String[] pathVersion2 = pathVersion[0].split("#");
-                                result.add(new FileData(f.getName(), packageName.replaceAll("\\.", "/"), pathVersion2[0], pathVersion2[1], pathVersion[1]));
+                                result.add(new FileData(f.getName(), packageName.replaceAll("\\.", "/"), pathVersion2[0], pathVersion2[1], pathVersion[1],null));
                             }
                         }
                     }
@@ -295,7 +333,7 @@ public class ProcessSources {
         return result;
     }
 
-    private static ArrayList<FileData> checkFileForAnnotations(String file, String annotationName, String server) throws ClassNotFoundException {
+    private static ArrayList<FileData> checkFileForAnnotations(String file, String annotationName, String server, String gitDir) throws ClassNotFoundException {
         String[] destinations = null;
         String annotationLine = null;
         ArrayList<FileData> result = new ArrayList<FileData>();
@@ -317,15 +355,39 @@ public class ProcessSources {
                     destinations = annotationLine.split("\"");
                     for (String path : destinations) {
                         if (!path.contains(",") && path.contains("/" + server + "/")) {
-                            if (!path.contains("#") && !path.contains("*")) {
-                                result.add(new FileData(f.getName(), packageName.replaceAll("\\.", "/"), path, null, null, lineNum));
+                            if (path.contains("@")){
+                                String[] commits = path.split("@")[1].split("-");
+                                String dir = gitDir;
+                                String distribute = "true";
+                                
+                                for(String com : commits){
+                                    ArrayList<String> commands=new ArrayList<String>();
+                                    commands.add("bash");
+                                    commands.add("-c");
+                                    commands.add("cd " + dir + " ; git show --name-only " + com);
+                                    ProcessBuilder pb = new ProcessBuilder(commands);
+                                    Process p = pb.start();
+
+                                    while (p.isAlive());
+                                    String output = IOUtils.toString(p.getInputStream());
+                                //    System.out.println("+++++++ " + output);
+                                    p.destroy();
+                                    if(!output.contains("commit")){
+                                        distribute="false";
+                                        break;
+                                    }
+                                }
+                                String[] pathVersion = path.split("@");
+                                result.add(new FileData(f.getName(), packageName.replaceAll("\\.", "/"), pathVersion[0], null, null, lineNum, distribute));
+                            } else if(!path.contains("#") && !path.contains("*")) {
+                                result.add(new FileData(f.getName(), packageName.replaceAll("\\.", "/"), path, null, null, lineNum, null));
                             } else if (!path.contains("*")) {
                                 String[] pathVersion = path.split("#");
-                                result.add(new FileData(f.getName(), packageName.replaceAll("\\.", "/"), pathVersion[0], pathVersion[1], null, lineNum));
+                                result.add(new FileData(f.getName(), packageName.replaceAll("\\.", "/"), pathVersion[0], pathVersion[1], null, lineNum, null));
                             } else {
                                 String[] pathVersion = path.split("\\*");
                                 String[] pathVersion2 = pathVersion[0].split("#");
-                                result.add(new FileData(f.getName(), packageName.replaceAll("\\.", "/"), pathVersion2[0], pathVersion2[1], pathVersion[1], lineNum));
+                                result.add(new FileData(f.getName(), packageName.replaceAll("\\.", "/"), pathVersion2[0], pathVersion2[1], pathVersion[1], lineNum, null));
                             }
                         }
                     }
@@ -513,10 +575,17 @@ public class ProcessSources {
 
     }
 
-    private static void checkMethodInclusion(File file, String destFile, String server, String basedir, String version, String versionOrderDir, FeatureData featureDataList, String disableSnapshotVersions) throws ClassNotFoundException, IOException {
+    private static void checkMethodInclusion(File file, String destFile, String server, String basedir, String version, String versionOrderDir, FeatureData featureDataList, String disableSnapshotVersions, String gitDir) throws ClassNotFoundException, IOException {
 
-        ArrayList<FileData> output = checkFileForAnnotations(file.getAbsolutePath(), "@ATTest", server);
+        ArrayList<FileData> output = checkFileForAnnotations(file.getAbsolutePath(), "@ATTest", server, gitDir);
         for (FileData dest : output) {
+            if(dest.commitExists!=null){
+                if(dest.commitExists.equals("true")){
+                    System.out.println(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName);
+                    enableTests(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName, dest, dest.fileName);
+                }
+                continue;
+            }
             if (dest.minVersion != null) {
                 boolean isSnapshot = false;
                 if (disableSnapshotVersions != null && disableSnapshotVersions.contains("true")) {
@@ -838,22 +907,25 @@ class FileData {
     protected String minVersion;
     protected String maxVersion;
     protected int lineNum;
+    protected String commitExists;
 
-    public FileData(String fileName, String packageName, String fileBaseDir, String minVersion, String maxVersion) {
+    public FileData(String fileName, String packageName, String fileBaseDir, String minVersion, String maxVersion, String commitExists) {
         this.fileName = fileName;
         this.packageName = packageName;
         this.fileBaseDir = fileBaseDir;
         this.minVersion = minVersion;
         this.maxVersion = maxVersion;
+        this.commitExists = commitExists;
     }
 
-    public FileData(String fileName, String packageName, String fileBaseDir, String minVersion, String maxVersion, int lineNum) {
+    public FileData(String fileName, String packageName, String fileBaseDir, String minVersion, String maxVersion, int lineNum, String commitExists) {
         this.fileName = fileName;
         this.packageName = packageName;
         this.fileBaseDir = fileBaseDir;
         this.minVersion = minVersion;
         this.maxVersion = maxVersion;
         this.lineNum = lineNum;
+        this.commitExists = commitExists;
     }
 
 }

@@ -144,7 +144,7 @@ public class AdditionalTestsuiteDistributeSources {
         
         ProcessSourcesEatPm.EatPmAnnotationProcessing(args[0],args[1],pmFeatureDataList,excludedFiles);
     //    ProcessSourcesEatPm.EatPmAnnotationProcessing("/home/panos/RC/eap-additional-testsuite-ls","/home/panos/RC/eap-additional-testsuite-ls/modules/src/main/java",pmFeatureDataList,excludedFiles); 
-        ProcessSources.AdditionalTestSuiteAnnotationProcessing(args[0],args[1],args[2],args[3],args[4],Boolean.parseBoolean(args[5]),featureDataList,excludedFiles, args[8]);
+        ProcessSources.AdditionalTestSuiteAnnotationProcessing(args[0],args[1],args[2],args[3],args[4],Boolean.parseBoolean(args[5]),featureDataList,excludedFiles, args[8], args[9]);
     //    ProcessSources.AdditionalTestSuiteAnnotationProcessing("/home/panos/RC/eap-additional-testsuite-ls","/home/panos/RC/eap-additional-testsuite-ls/modules/src/main/java","Wildfly","14.0.0.Beta1-SNAPSHOT","versionOrder",Boolean.parseBoolean(null),featureDataList,excludedFiles,"true");
     }
     
