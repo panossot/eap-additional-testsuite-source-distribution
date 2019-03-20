@@ -29,6 +29,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -36,9 +37,11 @@ import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.io.FileUtils;
 
 /**
  *
@@ -391,6 +394,15 @@ public class ProcessSources {
                             }
                         }
                     }
+                    
+                    line = reader.readLine();
+                    if(line.contains("EATDPM") && line.contains("excludeDependencies")) {
+                        String[] excludeDependencies = null;
+                        if (line.lastIndexOf("excludeDependencies={\"") != -1) {
+                            excludeDependencies = line.substring(line.lastIndexOf("excludeDependencies={\"") + 22, line.lastIndexOf("excludeDependencies={\"") + 22 + line.substring(line.lastIndexOf("excludeDependencies={\"") + 22).indexOf("\"}")).split(",");
+                            result.get(result.size()-1).excudeDeps = excludeDependencies;
+                        }
+                    }
                 }
             }
         } catch (Exception ex) {
@@ -529,6 +541,8 @@ public class ProcessSources {
     }
 
     private static void procedure(FileData dest, String server, String basedir, String version, String versionOrderDir, int verRelease1, int verRelease3, String[] subVersionsMax, String[] versionRelease, boolean isSnapshot) throws IOException {
+        boolean enable = false;
+        
         if (verRelease1 == verRelease3) {
 
             String[] vf = new String[2];
@@ -559,6 +573,7 @@ public class ProcessSources {
                                     if (lastPart.contains(ver) && !(ver.equals(lastPart) && isSnapshot)) {
                                         System.out.println(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName);
                                         enableTests(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName, dest, dest.fileName);
+                                        enable = true;
                                     }
                                 }
                             }
@@ -569,16 +584,21 @@ public class ProcessSources {
                 if (!(verRelease1 == verRelease3 && isSnapshot)) {
                     System.out.println(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName);
                     enableTests(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName, dest, dest.fileName);
+                    enable = true;
                 }
             }
         }
 
+        if(!enable && dest.excudeDeps!=null) {
+            deleteMethodEAT(dest.lineNum, basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName, dest.excudeDeps);
+        }
     }
 
     private static void checkMethodInclusion(File file, String destFile, String server, String basedir, String version, String versionOrderDir, FeatureData featureDataList, String disableSnapshotVersions, String gitDir) throws ClassNotFoundException, IOException {
 
         ArrayList<FileData> output = checkFileForAnnotations(file.getAbsolutePath(), "@ATTest", server, gitDir);
         for (FileData dest : output) {
+
             if(dest.commitExists!=null){
                 if(dest.commitExists.equals("true")){
                     System.out.println(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName);
@@ -586,6 +606,9 @@ public class ProcessSources {
                 }
                 continue;
             }
+
+            boolean enable = false;
+            
             if (dest.minVersion != null) {
                 boolean isSnapshot = false;
                 if (disableSnapshotVersions != null && disableSnapshotVersions.contains("true")) {
@@ -648,6 +671,7 @@ public class ProcessSources {
                                                     if ((verRelease3 == 0 || verRelease1 < verRelease3)) {
                                                         System.out.println(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName);
                                                         enableTests(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName, dest, dest.fileName);
+                                                        enable = true;
                                                     } else if (verRelease1 == verRelease3) {
                                                         procedure(dest, server, basedir, version, versionOrderDir, verRelease1, verRelease3, subVersionsMax, versionRelease, isSnapshot);
                                                     }
@@ -659,6 +683,7 @@ public class ProcessSources {
                                             if ((verRelease3 == 0 || verRelease1 < verRelease3)) {
                                                 System.out.println(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName);
                                                 enableTests(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName, dest, dest.fileName);
+                                                enable = true;
                                             } else if (verRelease1 == verRelease3) {
                                                 procedure(dest, server, basedir, version, versionOrderDir, verRelease1, verRelease3, subVersionsMax, versionRelease, isSnapshot);
                                             }
@@ -673,6 +698,7 @@ public class ProcessSources {
                         if (verRelease3 == 0 || verRelease1 < verRelease3) {
                             System.out.println(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName);
                             enableTests(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName, dest, dest.fileName);
+                            enable = true;
                         } else if (verRelease1 == verRelease3) {
                             procedure(dest, server, basedir, version, versionOrderDir, verRelease1, verRelease3, subVersionsMax, versionRelease, isSnapshot);
                         }
@@ -680,7 +706,12 @@ public class ProcessSources {
                 }
             } else {
                 System.out.println(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName);
+                enable = true;
                 enableTests(basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName, dest, dest.fileName);
+            }
+            
+            if(!enable && dest.excudeDeps!=null) {
+                deleteMethodEAT(dest.lineNum, basedir + "/" + dest.fileBaseDir + "/" + dest.packageName + "/" + dest.fileName, dest.excudeDeps);
             }
         }
 
@@ -897,6 +928,53 @@ public class ProcessSources {
 
         Files.write(Paths.get(file), lines, Charset.defaultCharset());
     }
+    
+    private static void deleteMethodEAT(int lineNum, String file, String[] excludeDependencies) throws IOException{
+        List<String> lines = FileUtils.readLines(new File(file), "utf-8");
+        
+        if (excludeDependencies!=null) {
+            for(String dep : excludeDependencies) {
+                int lineN = 0;
+                while(!lines.get(lineN).contains(dep)){
+                    lineN++;
+                }
+                
+                if (lines.get(lineN).contains(dep)){
+                    lines.remove(lineN);
+                    lineNum--;
+                }
+            }
+        }
+        
+        while(lines.get(lineNum).compareTo("")!=0){
+            lineNum--;
+        }
+        if(lines.get(lineNum).compareTo("")==0) {
+            int up=0;
+            int down=0;
+            lineNum++;
+            
+            while ((lines!=null && lines.size()>lineNum-1 && lines.get(lineNum)!=null && lines.get(lineNum).trim().compareTo("")!=0) || up==0 || up!=down) {
+                String line = lines.get(lineNum);
+                while(line.contains("{")) {
+                    line = line.replaceFirst("\\{", "");
+                    up++;
+                }
+                while(line.contains("}")) {
+                    line = line.replaceFirst("\\}", "");
+                    down++;
+                }
+                lines.remove(lineNum);
+            }
+            
+            FileWriter writer = new FileWriter(file); 
+            for(String str: lines) {
+              writer.write(str + "\n");
+            }
+            writer.close();
+            
+        }
+    }
 }
 
 class FileData {
@@ -906,6 +984,7 @@ class FileData {
     protected String fileBaseDir;
     protected String minVersion;
     protected String maxVersion;
+    protected String[] excudeDeps;
     protected int lineNum;
     protected String commitExists;
 
