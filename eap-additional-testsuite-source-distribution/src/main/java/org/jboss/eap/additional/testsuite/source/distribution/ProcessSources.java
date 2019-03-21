@@ -396,6 +396,7 @@ public class ProcessSources {
                     }
                     
                     line = reader.readLine();
+                    lineNum++;
                     if(line.contains("EATDPM") && line.contains("excludeDependencies")) {
                         String[] excludeDependencies = null;
                         if (line.lastIndexOf("excludeDependencies={\"") != -1) {
