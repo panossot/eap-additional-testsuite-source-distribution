@@ -14,6 +14,7 @@ Receives as inputs :
 7. args[6] : the path to the feature list, which is used with the @ATFeature annotation (optional)
 8. args[7] : the path to the feature list, which is used with the @EATDMP annotation (optional)
 9. args[8] : true/false value to disable all the tests in the testsuite in case the version included is a SNAPSHOT (optional)
+10. args[9] : the git parent directory of the software program to test
 
 Purpose :
 ---------
