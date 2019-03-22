@@ -953,6 +953,8 @@ public class ProcessSources {
         if(lines.get(lineNum).compareTo("")==0) {
             int up=0;
             int down=0;
+            lines.remove(lineNum);
+            lines.add(lineNum, "/**");
             lineNum++;
             
             while ((lines!=null && lines.size()>lineNum-1 && lines.get(lineNum)!=null && lines.get(lineNum).trim().compareTo("")!=0) || up==0 || up!=down) {
@@ -965,8 +967,11 @@ public class ProcessSources {
                     line = line.replaceFirst("\\}", "");
                     down++;
                 }
-                lines.remove(lineNum);
+                lineNum++;
+            //    lines.remove(lineNum);
             }
+            lines.remove(lineNum);
+            lines.add(lineNum, "**/");
             
             FileWriter writer = new FileWriter(file); 
             for(String str: lines) {
