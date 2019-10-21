@@ -302,7 +302,7 @@ public class ProcessSources {
                                 }
 
                             }
-                        
+                                                    
                             if (path.contains("@")){
                                 String[] commits = path.split("@")[1].split("-");
                                 String dir = gitDir;
@@ -340,7 +340,7 @@ public class ProcessSources {
                         }
                     }
                     
-                    if(modules.length>1 && pathB.contains("...")) {
+                    if(modules.length>1 && pathB!=null && pathB.contains("...")) {
                         for (int l=1; l<modules.length; l++) {
                             activemodule = modules[l];
                             String path = pathB.replaceFirst("\\.\\.\\.", modules[l]);
