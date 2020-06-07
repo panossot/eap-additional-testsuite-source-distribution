@@ -28,6 +28,6 @@ import java.lang.annotation.Target;
  */
 @Inherited
 @Target({TYPE})
-public @interface EapAdditionalTestsuite {
+public @interface EAT {
     String[] value() default "";
 }

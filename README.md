@@ -18,9 +18,9 @@ Receives as inputs :
 
 Purpose :
 ---------
-The code searches the specified source directory for java files with the class annotation @EapAdditionalTestsuite and distributes the java files to the equivalent directories (which are specified as an attribute of @EapAdditionalTestsuite).
+The code searches the specified source directory for java files with the class annotation @EAT and distributes the java files to the equivalent directories (which are specified as an attribute of @EAT).
 
-@EapAdditionalTestsuite
+@EAT
 -----------------------
 Class level annotation used for distribution of the sources to the equivalent Server directory of eap-additional-testsuite.
 Its attribute is an array of Strings that specifies the destination directories of the sources.

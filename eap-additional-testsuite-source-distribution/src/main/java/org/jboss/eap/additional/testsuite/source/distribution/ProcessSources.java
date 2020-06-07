@@ -62,7 +62,7 @@ public class ProcessSources {
                 if (file.isDirectory()) {
                     AdditionalTestSuiteAnnotationProcessing(basedir, file.getAbsolutePath(), server, version, versionOrderDir, disableAllTests, featureDataList, excludedFiles, disableSnapshotVersions, gitDir, prePath, postPath, activemodules);
                 } else if (!excludedFiles.contains(file.getAbsolutePath())) {
-                    ArrayList<FileData> output = checkFileForAnnotation(file.getAbsolutePath(), "@EapAdditionalTestsuite", server, gitDir, prePath, postPath, activemodules);
+                    ArrayList<FileData> output = checkFileForAnnotation(file.getAbsolutePath(), "@EAT", server, gitDir, prePath, postPath, activemodules);
                     for (FileData dest : output) {
                         if(dest.commitExists!=null){
                             if(dest.commitExists.equals("true")){
